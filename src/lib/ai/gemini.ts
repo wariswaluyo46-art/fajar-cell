@@ -10,8 +10,8 @@ import "server-only";
  */
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const DEFAULT_MODEL = "gemini-4-argon";
-const DEFAULT_FALLBACK_MODELS = ["gemini-3.1-flash-lite"];
+const DEFAULT_MODEL = "gemini-2.0-flash";
+const DEFAULT_FALLBACK_MODELS = ["gemini-1.5-flash", "gemini-2.5-flash"];
 const DEFAULT_TIMEOUT_MS = 20_000;
 const MIN_TIMEOUT_MS = 3_000;
 const MAX_TIMEOUT_MS = 55_000;
@@ -97,7 +97,15 @@ function readConfig(): GeminiConfig {
       ? DEFAULT_FALLBACK_MODELS
       : fallbackSource.split(",").map(normalizeModel).filter(Boolean);
 
-  const models = [...new Set([primary, ...fallbacks].filter(Boolean))];
+  // Pastikan model resmi gratis Google AI Studio selalu tersedia sebagai fallback
+  const models = [
+    ...new Set([
+      primary,
+      ...fallbacks,
+      "gemini-2.0-flash",
+      "gemini-1.5-flash",
+    ].filter(Boolean)),
+  ];
   if (models.length === 0) {
     throw new GeminiUnavailableError(
       "not-configured",
