@@ -1,0 +1,340 @@
+@import "tailwindcss";
+
+/*
+ * Design token Konter Fajar Cell.
+ * Palet "royal" = Electric Royal Blue, "whatsapp" = aksen transaksi.
+ */
+@theme {
+  --font-sans:
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+
+  --color-royal-50: #eff5ff;
+  --color-royal-100: #dbe8fe;
+  --color-royal-200: #bfd7fe;
+  --color-royal-300: #93bbfd;
+  --color-royal-400: #6096fa;
+  --color-royal-500: #3b76f6;
+  --color-royal-600: #2457eb;
+  --color-royal-700: #1d43d8;
+  --color-royal-800: #1e39af;
+  --color-royal-900: #1e3589;
+  --color-royal-950: #172354;
+
+  --color-whatsapp: #25d366;
+  /* Versi gelap untuk teks/tombol agar lolos kontras WCAG AA. */
+  --color-whatsapp-dark: #0b6f5e;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 18px 40px -24px rgb(29 78 216 / 0.35);
+  --shadow-card-hover: 0 28px 60px -28px rgb(29 67 216 / 0.45);
+
+  /* Enhanced shadows for modern depth */
+  --shadow-card-glow: 0 20px 50px -20px rgb(29 78 216 / 0.25), 0 8px 20px -8px rgb(14 165 233 / 0.15);
+  --shadow-card-hover-glow: 0 30px 70px -24px rgb(29 67 216 / 0.35), 0 12px 30px -10px rgb(14 165 233 / 0.2);
+  --shadow-wa-glow: 0 8px 30px -4px rgb(5 150 105 / 0.4);
+}
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes whatsapp-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes float-delayed {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.7);
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes subtle-glow {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes marquee-reverse {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@layer utilities {
+  .animate-marquee {
+    display: flex;
+    width: max-content;
+    animation: marquee 30s linear infinite;
+    will-change: transform;
+  }
+
+  .animate-marquee-reverse {
+    display: flex;
+    width: max-content;
+    animation: marquee-reverse 32s linear infinite;
+    will-change: transform;
+  }
+
+  .pause-on-hover:hover .animate-marquee,
+  .pause-on-hover:hover .animate-marquee-reverse {
+    animation-play-state: paused;
+  }
+  .animate-fade-up {
+    animation: fade-up 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-toast-in {
+    animation: toast-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-whatsapp-pulse {
+    animation: whatsapp-pulse 2.4s ease-out infinite;
+  }
+
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float-delayed 5s ease-in-out 0.5s infinite;
+  }
+
+  .animate-shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+  }
+
+  .animate-pulse-dot {
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease infinite;
+  }
+
+  .animate-subtle-glow {
+    animation: subtle-glow 4s ease-in-out infinite;
+  }
+
+  /* Gradient Text Utility */
+  .gradient-text {
+    background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #0EA5E9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Primary brand gradient */
+  .bg-brand-gradient {
+    background: linear-gradient(135deg, #1E40AF 0%, #2563EB 50%, #0EA5E9 100%);
+  }
+
+  /* WhatsApp action gradient */
+  .bg-wa-gradient {
+    background: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  }
+
+  /* Deep luxury tech gradient for dark sections */
+  .bg-deep-tech {
+    background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 50%, #0F172A 100%);
+  }
+
+  /* Glassmorphism utility */
+  .glass {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  .glass-dark {
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+  }
+
+  /* Card glass effect */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(12px) saturate(150%);
+    -webkit-backdrop-filter: blur(12px) saturate(150%);
+  }
+
+  /* Mesh gradient background for hero and sections */
+  .mesh-gradient-light {
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(191, 215, 254, 0.4) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(14, 165, 233, 0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 40% 80%, rgba(191, 215, 254, 0.15) 0%, transparent 50%),
+      linear-gradient(180deg, #F8FAFC 0%, #EFF6FF 100%);
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Mode Teks Jelas & Ramah Lansia (Elder-Friendly Readability Mode) */
+  html.elder-mode {
+    font-size: 112%;
+  }
+
+  html.elder-mode body {
+    line-height: 1.65;
+    letter-spacing: 0.015em;
+  }
+
+  html.elder-mode p,
+  html.elder-mode span,
+  html.elder-mode li {
+    font-weight: 500;
+  }
+
+  html.elder-mode .text-slate-600 {
+    color: #1e293b !important;
+  }
+
+  html.elder-mode .text-slate-500 {
+    color: #334155 !important;
+  }
+
+  html.elder-mode button,
+  html.elder-mode a,
+  html.elder-mode input,
+  html.elder-mode select {
+    min-height: 48px;
+  }
+
+  body {
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: var(--color-royal-200);
+    color: var(--color-royal-950);
+  }
+}
+
+.reveal {
+  transition-property: opacity, transform;
+  transition-duration: 700ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal[data-reveal-state="hidden"] {
+  opacity: 0;
+  transform: translateY(1.75rem);
+  transition-delay: 0ms;
+}
+
+.reveal[data-reveal-state="visible"] {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

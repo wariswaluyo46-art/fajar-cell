@@ -1,0 +1,938 @@
+[
+  {
+    "id": "hp-baru-infinix-smart-20",
+    "slug": "infinix-smart-20-8-64",
+    "name": "Infinix Smart 20 8(4+4)/64GB",
+    "category": "handphone-baru",
+    "brand": "Infinix",
+    "price": 1149000,
+    "originalPrice": 1299000,
+    "stock": 5,
+    "status": "ready",
+    "thumbnail": "/images/products/infinix-smart-20.jpg",
+    "images": [
+      "/images/products/infinix-smart-20.jpg",
+      "/images/products/infinix-smart-20-2.jpg"
+    ],
+    "description": "Infinix Smart 20 unit baru segel resmi distributor. Dilengkapi RAM 8GB (4+4GB Extended), ROM 64GB, layar luas 6.78 inci Punch-Hole 120Hz yang sangat mulus, baterai 5000mAh tahan seharian, bodi 7.7mm Ultra-Slim, sertifikasi IP54 Splash Proof, dan 1.5M Drop Resistance. Garansi resmi 1 tahun.",
+    "featured": true,
+    "color": "Sunset Orange",
+    "tradeInEligible": true,
+    "specs": {
+      "ram": 4,
+      "storage": 64,
+      "battery": 5000,
+      "camera": "8MP AI Dual Camera",
+      "screen": "6.78 inci Punch-Hole 120Hz",
+      "chipset": "MediaTek Helio G81 Ultimate"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 365,
+      "description": "Garansi resmi distributor 1 tahun"
+    },
+    "createdAt": "2026-11-11T05:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-poco-c81-pro",
+    "slug": "poco-c81-pro-4-64",
+    "name": "POCO C81 Pro 4/64GB",
+    "category": "handphone-bekas",
+    "brand": "Xiaomi",
+    "price": 600000,
+    "originalPrice": 1199000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/poco-c81-pro.jpg",
+    "images": [
+      "/images/products/poco-c81-pro.jpg",
+      "/images/products/poco-c81-pro-2.jpg"
+    ],
+    "description": "POCO C81 Pro unit second istimewa, bodi mulus dan seluruh sensor normal. Layar ekstra lega 6.9 inci 120Hz, baterai monster 6000mAh awet seharian penuh, prosesor UNISOC T7250 kencang dengan Xiaomi HyperOS, kamera 13MP AI jernih. Sudah lulus tes fungsi teknisi.",
+    "featured": true,
+    "color": "Shadow Black",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 96%",
+      "label": "Unit + Charger",
+      "minusCount": 0,
+      "completeness": [
+        "Unit HP",
+        "Charger Fast Charging",
+        "Kabel Data"
+      ],
+      "batteryHealth": 95
+    },
+    "specs": {
+      "ram": 4,
+      "storage": 64,
+      "battery": 6000,
+      "camera": "13MP AI Camera",
+      "screen": "6.9 inci HD+ 120Hz",
+      "chipset": "UNISOC T7250 Octa-Core"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari cek fungsi & servis"
+    },
+    "createdAt": "2026-11-10T10:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-samsung-m30s",
+    "slug": "samsung-galaxy-m30s-4-64",
+    "name": "Samsung Galaxy M30s 4/64GB",
+    "category": "handphone-bekas",
+    "brand": "Samsung",
+    "price": 1150000,
+    "originalPrice": 2999000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/samsung-galaxy-m30s.jpg",
+    "images": [
+      "/images/products/samsung-galaxy-m30s.jpg",
+      "/images/products/samsung-galaxy-m30s-2.jpg"
+    ],
+    "description": "Samsung Galaxy M30s fullset dus box original. Layar Super AMOLED 6.4 inci tajam dan bening, baterai jumbo 6000mAh, Triple Camera 48MP Ultra-Wide, chipset Exynos 9611 handal untuk harian dan medsos. Kondisi mulus, sinyal 4G all operator lancar.",
+    "featured": true,
+    "color": "Opal Black",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 95%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box Original",
+        "Unit HP",
+        "Charger Original",
+        "Buku Panduan"
+      ],
+      "batteryHealth": 90
+    },
+    "specs": {
+      "ram": 4,
+      "storage": 64,
+      "battery": 6000,
+      "camera": "48MP + 8MP (Ultra-Wide) + 5MP",
+      "screen": "6.4 inci Super AMOLED FHD+",
+      "chipset": "Exynos 9611 Octa-Core"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-11-09T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-oppo-a18",
+    "slug": "oppo-a18-glowing-blue-4-128",
+    "name": "OPPO A18 Glowing Blue 4/128GB",
+    "category": "handphone-bekas",
+    "brand": "Oppo",
+    "price": 400000,
+    "originalPrice": 1499000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/oppo-a18.jpg",
+    "images": [
+      "/images/products/oppo-a18.jpg",
+      "/images/products/oppo-a18-2.jpg"
+    ],
+    "description": "OPPO A18 warna Glowing Blue memikat dengan tekstur bodi matte tahan sidik jari. Storage besar 128GB lega menyimpan ribuan foto dan aplikasi, RAM 4GB + Helio G85 smooth, layar 90Hz Sunlight Display, baterai 5000mAh awet seharian. Segel baut utuh.",
+    "featured": true,
+    "color": "Glowing Blue",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 95%",
+      "label": "Unit + Charger",
+      "minusCount": 0,
+      "completeness": [
+        "Unit HP",
+        "Charger Fast Charging",
+        "Kabel Data"
+      ],
+      "batteryHealth": 92
+    },
+    "specs": {
+      "ram": 4,
+      "storage": 128,
+      "battery": 5000,
+      "camera": "8MP Dual AI Camera",
+      "screen": "6.56 inci HD+ 90Hz",
+      "chipset": "MediaTek Helio G85"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-10T10:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-oppo-a15",
+    "slug": "oppo-a15-3-32",
+    "name": "OPPO A15 3/32GB",
+    "category": "handphone-bekas",
+    "brand": "Oppo",
+    "price": 750000,
+    "originalPrice": 1799000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/oppo-a15.jpg",
+    "images": [
+      "/images/products/oppo-a15.jpg",
+      "/images/products/oppo-a15-2.jpg"
+    ],
+    "description": "OPPO A15 unit second lengkap dus box bawaan original. Desain 3D tipis elegan, AI Triple Camera 13MP dengan sensor makro dan bokeh, sensor sidik jari belakang responsif, baterai 4230mAh tahan lama. Semua fitur bekerja normal 100%.",
+    "featured": false,
+    "color": "Mystery Blue",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 94%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box",
+        "Unit HP",
+        "Charger",
+        "Buku Panduan"
+      ],
+      "batteryHealth": 88
+    },
+    "specs": {
+      "ram": 3,
+      "storage": 32,
+      "battery": 4230,
+      "camera": "13MP + 2MP + 2MP AI Triple Camera",
+      "screen": "6.52 inci HD+ Waterdrop",
+      "chipset": "MediaTek Helio P35"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-15T09:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-redmi-9",
+    "slug": "xiaomi-redmi-9-4-64",
+    "name": "Xiaomi Redmi 9 4/64GB",
+    "category": "handphone-bekas",
+    "brand": "Xiaomi",
+    "price": 300000,
+    "originalPrice": 1799000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/xiaomi-redmi-9.jpg",
+    "images": [
+      "/images/products/xiaomi-redmi-9.jpg",
+      "/images/products/xiaomi-redmi-9-2.jpg"
+    ],
+    "description": "Xiaomi Redmi 9 RAM 4GB ROM 64GB varian Ocean Green. Layar resolusi tinggi FHD+ 6.53 inci jernih tajam, prosesor gaming Helio G80 tangguh, Quad Camera 13MP dengan lensa ultra-wide, baterai besar 5020mAh support Type-C 18W Fast Charging. Siap pakai harian.",
+    "featured": false,
+    "color": "Ocean Green",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 93%",
+      "label": "Unit + Case + Charger",
+      "minusCount": 0,
+      "completeness": [
+        "Unit HP",
+        "Softcase Hijau",
+        "Charger Fast Charging"
+      ],
+      "batteryHealth": 89
+    },
+    "specs": {
+      "ram": 4,
+      "storage": 64,
+      "battery": 5020,
+      "camera": "13MP + 8MP + 5MP + 2MP Quad Camera",
+      "screen": "6.53 inci Full HD+ Dot Drop",
+      "chipset": "MediaTek Helio G80 Gaming"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-07T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-vivo-y1s",
+    "slug": "vivo-y1s-2-32",
+    "name": "Vivo Y1s 2/32GB",
+    "category": "handphone-bekas",
+    "brand": "Vivo",
+    "price": 550000,
+    "originalPrice": 1499000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/vivo-y1s.jpg",
+    "images": [
+      "/images/products/vivo-y1s.jpg",
+      "/images/products/vivo-y1s-2.jpg"
+    ],
+    "description": "Vivo Y1s kondisi lengkap dus box original. Desain bodi ramping dan ringan dengan layar 6.22 inci Ultra All Screen, baterai hemat 4030mAh, kamera belakang 13MP jernih, face access unlock cepat. Sangat cocok untuk anak sekolah dan orang tua.",
+    "featured": false,
+    "color": "Aurora Blue",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 95%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box Asli",
+        "Unit HP",
+        "Charger Bawaan",
+        "Buku Panduan"
+      ],
+      "batteryHealth": 90
+    },
+    "specs": {
+      "ram": 2,
+      "storage": 32,
+      "battery": 4030,
+      "camera": "13MP f/2.2",
+      "screen": "6.22 inci HD+ Halo FullView",
+      "chipset": "MediaTek Helio P35"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-18T09:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-oppo-a71",
+    "slug": "oppo-a71-2018-2-16",
+    "name": "OPPO A71 (2018) 2/16GB",
+    "category": "handphone-bekas",
+    "brand": "Oppo",
+    "price": 450000,
+    "originalPrice": 1899000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/oppo-a71-2018.jpg",
+    "images": [
+      "/images/products/oppo-a71-2018.jpg",
+      "/images/products/oppo-a71-2018-2.jpg"
+    ],
+    "description": "OPPO A71 edisi 2018 'Speedy Operation' lengkap dus box asli. Ditenagai prosesor Qualcomm Snapdragon 450 14nm yang hemat daya dan stabil, kamera 13MP dengan teknologi AI Beauty, bodi unibody ramping pas digenggam satu tangan.",
+    "featured": false,
+    "color": "Black Metal",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 92%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box Asli",
+        "Unit HP",
+        "Charger",
+        "Buku Garansi/Manual"
+      ],
+      "batteryHealth": 85
+    },
+    "specs": {
+      "ram": 2,
+      "storage": 16,
+      "battery": 3000,
+      "camera": "13MP f/2.2 AF",
+      "screen": "5.2 inci HD IPS LCD",
+      "chipset": "Qualcomm Snapdragon 450 Octa-Core"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-12T11:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-redmi-6a",
+    "slug": "xiaomi-redmi-6a-2-16",
+    "name": "Xiaomi Redmi 6A 2/16GB",
+    "category": "handphone-bekas",
+    "brand": "Xiaomi",
+    "price": 400000,
+    "originalPrice": 1399000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/xiaomi-redmi-6a.jpg",
+    "images": [
+      "/images/products/xiaomi-redmi-6a.jpg",
+      "/images/products/xiaomi-redmi-6a-2.jpg"
+    ],
+    "description": "Xiaomi Redmi 6A unit lengkap dus box warna oranye khas Xiaomi. Layar rasio modern 18:9 HD+ 5.45 inci, prosesor hemat daya 12nm, kamera 13MP tajam dengan PDAF cepat, dual SIM 4G + slot microSD terpisah. Kondisi mesin prima.",
+    "featured": false,
+    "color": "Black",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 93%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box Oranye",
+        "Unit HP",
+        "Charger",
+        "Buku Panduan"
+      ],
+      "batteryHealth": 88
+    },
+    "specs": {
+      "ram": 2,
+      "storage": 16,
+      "battery": 3000,
+      "camera": "13MP f/2.2 PDAF",
+      "screen": "5.45 inci HD+ 18:9",
+      "chipset": "MediaTek Helio A22"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-09T14:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-redmi-7",
+    "slug": "xiaomi-redmi-7-3-32",
+    "name": "Xiaomi Redmi 7 3/32GB",
+    "category": "handphone-bekas",
+    "brand": "Xiaomi",
+    "price": 350000,
+    "originalPrice": 1899000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/xiaomi-redmi-7.jpg",
+    "images": [
+      "/images/products/xiaomi-redmi-7.jpg",
+      "/images/products/xiaomi-redmi-7-2.jpg"
+    ],
+    "description": "Xiaomi Redmi 7 layar lebar 6.26 inci Dot Drop berproteksi Corning Gorilla Glass 5. Prosesor bertenaga Snapdragon 632, dual kamera AI 12MP + 2MP dengan efek bokeh natural, sensor fingerprint belakang cepat, baterai 4000mAh tahan lama.",
+    "featured": false,
+    "color": "Eclipse Black",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Normal 90%",
+      "label": "Unit + Charger",
+      "minusCount": 1,
+      "completeness": [
+        "Unit HP",
+        "Charger Fast Charging"
+      ],
+      "batteryHealth": 86
+    },
+    "specs": {
+      "ram": 3,
+      "storage": 32,
+      "battery": 4000,
+      "camera": "12MP + 2MP AI Dual Camera",
+      "screen": "6.26 inci HD+ Dot Drop",
+      "chipset": "Qualcomm Snapdragon 632"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-14T09:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-j2-prime",
+    "slug": "samsung-galaxy-j2-prime",
+    "name": "Samsung Galaxy J2 Prime",
+    "category": "handphone-bekas",
+    "brand": "Samsung",
+    "price": 350000,
+    "originalPrice": 1699000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/samsung-galaxy-j2-prime.jpg",
+    "images": [
+      "/images/products/samsung-galaxy-j2-prime.jpg",
+      "/images/products/samsung-galaxy-j2-prime-2.jpg"
+    ],
+    "description": "Samsung Galaxy J2 Prime legendaris lengkap dus box original. Bodi kokoh anti slip dengan baterai yang bisa dilepas-pasang (removable battery), kamera belakang 8MP dan kamera depan dengan LED Flash untuk selfie di tempat gelap. Cocok untuk HP operasional / telepon dasar.",
+    "featured": false,
+    "color": "Gold Edition",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Mulus 91%",
+      "label": "Fullset Dus Box",
+      "minusCount": 0,
+      "completeness": [
+        "Dus Box Bawaan",
+        "Unit HP",
+        "Baterai Original",
+        "Charger"
+      ],
+      "batteryHealth": 88
+    },
+    "specs": {
+      "ram": 1.5,
+      "storage": 8,
+      "battery": 2600,
+      "camera": "8MP f/2.2 + LED Flash Depan",
+      "screen": "5.0 inci qHD PLS TFT",
+      "chipset": "MediaTek MT6737T Quad-Core"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-11T13:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "hp-bekas-oppo-a3s",
+    "slug": "oppo-a3s-2-16",
+    "name": "OPPO A3s 2/16GB",
+    "category": "handphone-bekas",
+    "brand": "Oppo",
+    "price": 200000,
+    "originalPrice": 1999000,
+    "stock": 1,
+    "status": "ready",
+    "thumbnail": "/images/products/oppo-a3s.jpg",
+    "images": [
+      "/images/products/oppo-a3s.jpg",
+      "/images/products/oppo-a3s-2.jpg"
+    ],
+    "description": "OPPO A3s unit second favorit, bonus casing karakter Spider-Man terpasang. Layar lega 6.2 inci Super Full Screen dengan notch kekinian, dual kamera belakang 13MP + 2MP dengan AI Beauty 2.0, baterai monster 4230mAh tahan hingga 2 hari pemakaian normal. Harga sangat terjangkau.",
+    "featured": false,
+    "color": "Red / Dark Purple",
+    "tradeInEligible": true,
+    "condition": {
+      "grade": "Normal 90%",
+      "label": "Unit + Case Spider-Man + Charger",
+      "minusCount": 0,
+      "completeness": [
+        "Unit HP",
+        "Case Spider-Man",
+        "Charger"
+      ],
+      "batteryHealth": 87
+    },
+    "specs": {
+      "ram": 2,
+      "storage": 16,
+      "battery": 4230,
+      "camera": "13MP + 2MP Dual Rear Camera",
+      "screen": "6.2 inci HD+ Notch Display",
+      "chipset": "Qualcomm Snapdragon 450"
+    },
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-10-06T10:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-earphone-samsung-akg",
+    "slug": "earphone-samsung-akg-original",
+    "name": "Earphone Samsung Galaxy S8/S8+ Tuned by AKG Original (3.5mm)",
+    "category": "aksesoris",
+    "brand": "Samsung",
+    "price": 35000,
+    "originalPrice": 50000,
+    "stock": 12,
+    "status": "ready",
+    "thumbnail": "/images/products/earphone-samsung-akg.jpg",
+    "images": [
+      "/images/products/earphone-samsung-akg.jpg"
+    ],
+    "description": "Earphone kabel Samsung Galaxy Tuned by AKG box hitam segel. Kualitas audio premium dengan karakter suara jernih, vokal tegas, dan bass bulat bertenaga. Menggunakan kabel anyaman kain (braided) anti kusut, jack audio 3.5mm universal, lengkap dengan mikrofon dan tombol volume in-line.",
+    "featured": true,
+    "color": "Titanium Black",
+    "tradeInEligible": false,
+    "accessoryType": "headset",
+    "compatibleWith": [
+      "Samsung Galaxy Series",
+      "Xiaomi",
+      "OPPO",
+      "Vivo",
+      "Realme",
+      "Laptop"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi tukar baru 7 hari jika tidak bersuara"
+    },
+    "createdAt": "2026-11-01T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-earphone-realme-buds-7",
+    "slug": "earphone-realme-buds-7-hd-sound",
+    "name": "Earphone Realme Buds 7 HD Sound Quality (3.5mm)",
+    "category": "aksesoris",
+    "brand": "Realme",
+    "price": 25000,
+    "originalPrice": 35000,
+    "stock": 15,
+    "status": "ready",
+    "thumbnail": "/images/products/earphone-realme-buds-7.jpg",
+    "images": [
+      "/images/products/earphone-realme-buds-7.jpg",
+      "/images/products/earphone-realme-buds-7-2.jpg"
+    ],
+    "description": "Handsfree Realme Buds 7 kemasan pouch eksklusif. Desain sporty khas warna kuning Realme, driver bass dinamis dengan karakter dentuman suara punchy, eartips silikon lembut kedap suara, in-line mic jernih untuk teleponan dan main game online.",
+    "featured": true,
+    "color": "Realme Yellow & Black",
+    "tradeInEligible": false,
+    "accessoryType": "headset",
+    "compatibleWith": [
+      "Realme",
+      "OPPO",
+      "Vivo",
+      "Xiaomi",
+      "Samsung",
+      "Semua HP Jack 3.5mm"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi tukar baru 7 hari"
+    },
+    "createdAt": "2026-11-02T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-charger-samsung-4-6a",
+    "slug": "charger-samsung-dual-usb-fast-charger-4-6a",
+    "name": "Charger Samsung Dual USB Fast Charger 4.6A (BST-C08)",
+    "category": "aksesoris",
+    "brand": "Samsung",
+    "price": 35000,
+    "originalPrice": 50000,
+    "stock": 10,
+    "status": "ready",
+    "thumbnail": "/images/products/charger-samsung-bst-c08.jpg",
+    "images": [
+      "/images/products/charger-samsung-bst-c08.jpg"
+    ],
+    "description": "Batok charger Samsung 2USB Fast Charger Travel Charger model BST-C08. Memiliki 2 lubang output USB sehingga bisa mengisi daya 2 HP sekaligus dengan arus besar hingga 4.6A VOOC / Fast Charging. Dilengkapi sistem proteksi pintar Safety Charging anti overcharge dan anti panas.",
+    "featured": true,
+    "color": "White Blue",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "Samsung Galaxy",
+      "Xiaomi",
+      "OPPO",
+      "Vivo",
+      "Infinix",
+      "Realme"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi tukar baru 14 hari"
+    },
+    "createdAt": "2026-11-03T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-charger-realme-3a",
+    "slug": "charger-realme-travel-charger-3a-qc3",
+    "name": "Charger Realme Travel Charger 3.0A Quick Charge 3.0 (OP52CAED)",
+    "category": "aksesoris",
+    "brand": "Realme",
+    "price": 45000,
+    "originalPrice": 60000,
+    "stock": 8,
+    "status": "ready",
+    "thumbnail": "/images/products/charger-realme-op52caed.jpg",
+    "images": [
+      "/images/products/charger-realme-op52caed.jpg"
+    ],
+    "description": "Paket batok charger plus kabel data Realme Travel Charger 3.0A box kuning original. Mendukung Qualcomm Quick Charge 3.0 untuk pengisian daya cepat, stabil, dan aman bagi baterai HP. Ukuran mini portable cocok dibawa bepergian.",
+    "featured": false,
+    "color": "Realme Yellow Box / White Adapter",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "Realme",
+      "OPPO",
+      "Vivo",
+      "Xiaomi",
+      "Infinix"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi tukar baru 14 hari"
+    },
+    "createdAt": "2026-11-04T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-charger-kodok-lcd",
+    "slug": "desktop-lcd-usb-universal-charger-kodok",
+    "name": "Desktop LCD USB Universal Charger (Charger Kodok Digital)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 25000,
+    "originalPrice": 35000,
+    "stock": 15,
+    "status": "ready",
+    "thumbnail": "/images/products/charger-kodok-lcd.jpg",
+    "images": [
+      "/images/products/charger-kodok-lcd.jpg"
+    ],
+    "description": "Charger jepit baterai serbaguna (Charger Kodok) modern dengan layar indikator LCD digital. Menampilkan persentase pengisian baterai secara akurat dan real-time. Dilengkapi pin fleksibel yang cocok untuk segala bentuk baterai HP lepas-pasang, plus 1 port USB output samping.",
+    "featured": false,
+    "color": "Black & White LCD",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "Baterai Samsung",
+      "Baterai Nokia",
+      "Baterai Smartfren Andromax",
+      "Baterai Lepas-Pasang"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi toko 14 hari"
+    },
+    "createdAt": "2026-11-05T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-kabel-metal-180w",
+    "slug": "kabel-data-metal-head-180w-fast-charging-type-c",
+    "name": "Kabel Data Metal Head 180W Fast Charging Type-C (1 Meter)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 25000,
+    "originalPrice": 35000,
+    "stock": 20,
+    "status": "ready",
+    "thumbnail": "/images/products/kabel-metal-head-180w.jpg",
+    "images": [
+      "/images/products/kabel-metal-head-180w.jpg"
+    ],
+    "description": "Kabel data dan charger cepat dengan output super kencang hingga 180W. Menggunakan kepala konektor berlapis metal kokoh anti patah, bodi kabel tebal elastis warna hijau neon yang tidak mudah terpelintir, serta konektor USB ke Type-C berkecepatan tinggi.",
+    "featured": false,
+    "color": "Neon Green",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "Semua HP Android Port Type-C (Samsung, Xiaomi, OPPO, Vivo, Infinix, Realme)"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi tukar baru 14 hari"
+    },
+    "createdAt": "2026-11-06T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-kabel-super-120w",
+    "slug": "kabel-data-super-cable-120w-6a-silicone-micro-usb",
+    "name": "Kabel Data Super Cable 120W 6A Fast Charging Silicone (Micro USB)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 20000,
+    "originalPrice": 30000,
+    "stock": 20,
+    "status": "ready",
+    "thumbnail": "/images/products/kabel-super-cable-120w.jpg",
+    "images": [
+      "/images/products/kabel-super-cable-120w.jpg"
+    ],
+    "description": "Kabel data badak dengan material High Quality Silicone tebal, kenyal, dan lentur tahan tekukan ribuan kali. Mendukung arus besar 6A dengan daya maksimal 120W untuk pengisian kilat dan transfer data stabil. Menggunakan ujung konektor Micro USB.",
+    "featured": false,
+    "color": "White Silicone",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "HP Android Port Micro USB (Samsung J-Series, Xiaomi Redmi Lawas, OPPO, Vivo)"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi tukar baru 14 hari"
+    },
+    "createdAt": "2026-11-07T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-kabel-meeplus-me04m",
+    "slug": "kabel-data-meeplus-me04m-fast-charging-braided-micro",
+    "name": "Kabel Data MEEPLUS ME04-M Fast Charging Braided (Micro USB 1M)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 20000,
+    "originalPrice": 30000,
+    "stock": 15,
+    "status": "ready",
+    "thumbnail": "/images/products/kabel-meeplus-me04m.jpg",
+    "images": [
+      "/images/products/kabel-meeplus-me04m.jpg"
+    ],
+    "description": "Kabel data MEEPLUS model ME04-M panjang 1000mm (1 Meter). Terbuat dari rajutan nylon braided ekstra kuat anti putus, dilengkapi SR extended protection pada leher konektor untuk mencegah kabel retak, serta output voltase tinggi yang aman dan stabil.",
+    "featured": false,
+    "color": "Black Braided",
+    "tradeInEligible": false,
+    "accessoryType": "charger",
+    "compatibleWith": [
+      "Semua smartphone & perangkat Micro USB"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 14,
+      "description": "Garansi tukar baru 14 hari"
+    },
+    "createdAt": "2026-11-08T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-earphone-ecle-braided",
+    "slug": "earphone-ecle-3c-digital-in-ear-braided-stereo",
+    "name": "Earphone ECLE 3C Digital In-Ear Braided Stereo (3.5mm)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 20000,
+    "originalPrice": 30000,
+    "stock": 10,
+    "status": "ready",
+    "thumbnail": "/images/products/earphone-ecle-braided.jpg",
+    "images": [
+      "/images/products/earphone-ecle-braided.jpg"
+    ],
+    "description": "Earphone kabel ECLE kemasan pouch zipper kedap air. Menggunakan kabel transparan lilitan kepang (braided wire) dengan housing metalik abu-abu titanium yang mewah. Suara vokal sangat jernih dan detail, dilengkapi mikrofon telepon bawaan.",
+    "featured": false,
+    "color": "Titanium Braided",
+    "tradeInEligible": false,
+    "accessoryType": "headset",
+    "compatibleWith": [
+      "Semua HP Android dengan Jack Audio 3.5mm"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi tukar baru 7 hari"
+    },
+    "createdAt": "2026-11-09T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-earphone-u19-macaron",
+    "slug": "earphone-u19-macaron-pastel-extra-bass",
+    "name": "Earphone U19 Macaron Pastel 3.5mm Extra Bass",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 15000,
+    "originalPrice": 25000,
+    "stock": 25,
+    "status": "ready",
+    "thumbnail": "/images/products/earphone-u19-macaron.jpg",
+    "images": [
+      "/images/products/earphone-u19-macaron.jpg"
+    ],
+    "description": "Handsfree U19 Macaron warna pastel doff favorit remaja dan anak muda. Suara bass nendang dan nyaman dipakai berjam-jam tanpa sakit di telinga. Dilengkapi mikrofon untuk panggilan suara dan tombol navigasi praktis.",
+    "featured": false,
+    "color": "Pastel Macaron Series",
+    "tradeInEligible": false,
+    "accessoryType": "headset",
+    "compatibleWith": [
+      "Semua smartphone Android Jack 3.5mm & Laptop"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi tukar baru 7 hari"
+    },
+    "createdAt": "2026-11-10T08:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-tempered-glass-xpro",
+    "slug": "tempered-glass-9h-xpro-anti-clear-redmi-9a",
+    "name": "Tempered Glass 9H XPRO Anti Clear Layar Bening (Redmi 9A / Universal)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 15000,
+    "originalPrice": 25000,
+    "stock": 30,
+    "status": "ready",
+    "thumbnail": "/images/products/tempered-glass-xpro-redmi-9a.jpg",
+    "images": [
+      "/images/products/tempered-glass-xpro-redmi-9a.jpg"
+    ],
+    "description": "Pelindung layar kaca tempered glass 9H XPRO jernih anti gores. Dilapisi teknologi Oleophobic coating kimiawi untuk mencegah minyak dan bekas sidik jari menempel, sensitivitas sentuhan tetap 100% responsif. Siap dipasangkan langsung secara gratis dan presisi di konter kami.",
+    "featured": false,
+    "color": "Ultra Clear Bening",
+    "tradeInEligible": false,
+    "accessoryType": "tempered-glass",
+    "compatibleWith": [
+      "Xiaomi Redmi 9A",
+      "Redmi 9C",
+      "Redmi 10A",
+      "Redmi 10C",
+      "Universal Layar 6.53 inci"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi pasang rapi tanpa gelembung di toko"
+    },
+    "createdAt": "2026-11-10T09:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  },
+  {
+    "id": "acc-card-reader-all-in-one",
+    "slug": "card-reader-all-in-one-usb-2-pro-swivel",
+    "name": "Card Reader All in One USB 2.0 Pro Swivel (Micro SD to USB)",
+    "category": "aksesoris",
+    "brand": "Lainnya",
+    "price": 15000,
+    "originalPrice": 20000,
+    "stock": 20,
+    "status": "ready",
+    "thumbnail": "/images/products/card-reader-usb-all-in-one.jpg",
+    "images": [
+      "/images/products/card-reader-usb-all-in-one.jpg"
+    ],
+    "description": "Alat pembaca kartu memori (Card Reader) model putar / swivel flashdisk USB 2.0 Pro. Membaca kartu MicroSD / TF Card langsung ke port USB laptop, komputer, speaker aktif, atau tape mobil tanpa ribet. Desain putar pelindung tanpa tutup yang rawan hilang.",
+    "featured": false,
+    "color": "Purple Translucent",
+    "tradeInEligible": false,
+    "accessoryType": "lainnya",
+    "compatibleWith": [
+      "Kartu Micro SD / TF Card",
+      "Laptop",
+      "Komputer PC",
+      "Speaker Aktif USB"
+    ],
+    "warranty": {
+      "active": true,
+      "durationDays": 7,
+      "description": "Garansi tukar baru 7 hari"
+    },
+    "createdAt": "2026-11-10T10:00:00.000Z",
+    "updatedAt": "2026-11-11T05:00:00.000Z"
+  }
+]
