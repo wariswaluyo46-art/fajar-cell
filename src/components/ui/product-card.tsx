@@ -25,6 +25,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
   const [failedSecondary, setFailedSecondary] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState<0 | 1>(0);
   const [isCardHovered, setIsCardHovered] = useState(false);
+  const [shouldLoadSecondary, setShouldLoadSecondary] = useState(false);
 
   const isUsed = product.category === "handphone-bekas";
   const isPhone = isUsed || product.category === "handphone-baru";
@@ -70,12 +71,16 @@ export function ProductCard({ product, className }: ProductCardProps) {
 
   function handleTogglePhoto(e: React.MouseEvent) {
     e.stopPropagation();
+    setShouldLoadSecondary(true);
     setActiveImageIndex((prev) => (prev === 0 ? 1 : 0));
   }
 
   return (
     <article
-      onMouseEnter={() => setIsCardHovered(true)}
+      onMouseEnter={() => {
+        setIsCardHovered(true);
+        setShouldLoadSecondary(true);
+      }}
       onMouseLeave={() => setIsCardHovered(false)}
       className={cn(
         "group relative flex h-full flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:border-royal-400/50 hover:shadow-[0_20px_40px_-15px_rgba(37,99,235,0.18)]",
@@ -113,7 +118,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
                 src={product.thumbnail}
                 alt={`Foto depan ${product.name}`}
                 fill
-                sizes="(min-width: 1280px) 300px, (min-width: 1024px) 33vw, (min-width: 640px) 45vw, 90vw"
+                loading="lazy"
+                sizes="(min-width: 1280px) 280px, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 92vw"
                 className={cn(
                   "object-cover transition-all duration-700 ease-out",
                   showSecondary
@@ -124,8 +130,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
               />
             )}
 
-            {/* Secondary Image (Smooth Motion Crossfade + Ken Burns Zoom) */}
-            {hasSecondary && secondaryImage && (
+            {/* Secondary Image (Dimuat hanya saat interaksi hover/tap untuk menghemat kuota) */}
+            {hasSecondary && secondaryImage && (shouldLoadSecondary || showSecondary) && (
               <>
                 {requiresNativeImage(secondaryImage) ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -148,7 +154,8 @@ export function ProductCard({ product, className }: ProductCardProps) {
                     src={secondaryImage}
                     alt={`Foto belakang / sudut kedua ${product.name}`}
                     fill
-                    sizes="(min-width: 1280px) 300px, (min-width: 1024px) 33vw, (min-width: 640px) 45vw, 90vw"
+                    loading="lazy"
+                    sizes="(min-width: 1280px) 280px, (min-width: 1024px) 31vw, (min-width: 640px) 46vw, 92vw"
                     className={cn(
                       "object-cover transition-all duration-700 ease-out",
                       showSecondary

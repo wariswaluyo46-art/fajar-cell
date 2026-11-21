@@ -14,11 +14,11 @@ import {
   isProductStatus,
 } from "./product-input";
 import { getFallbackThumbnail, isValidImageSource } from "./product-images";
-import { products as seedSource } from "./products";
 
 /**
- * Store produk sisi klien. Data selalu berasal dari API Supabase; data seed hanya
- * dipakai untuk HTML awal/SSR dan fallback bila API belum merespons.
+ * Store produk sisi klien. Data berasal dari API Supabase; data awal SSR
+ * disuntikkan melalui `ProductsProvider` dari Server Component sehingga
+ * `products.json` tidak perlu dibundle ganda ke JS client.
  *
  * Satu watcher dipakai bersama semua subscriber: fetch awal, BroadcastChannel
  * untuk tab lain, resync saat fokus/online, dan polling ringan saat halaman
@@ -31,13 +31,14 @@ export interface ProductsState {
   products: Product[];
   isLoading: boolean;
   error: string | null;
+  hasLoaded: boolean;
 }
 
-const seedProducts: Product[] = [...seedSource];
 const initialSnapshot: ProductsState = {
-  products: seedProducts,
+  products: [],
   isLoading: false,
   error: null,
+  hasLoaded: false,
 };
 
 const listeners = new Set<Listener>();
@@ -340,7 +341,7 @@ export function getProductsSnapshot(): Product[] {
 }
 
 export function getServerProductsSnapshot(): Product[] {
-  return seedProducts;
+  return initialSnapshot.products;
 }
 
 function broadcastProductsChange(): void {
@@ -364,7 +365,7 @@ function applyProduct(product: Product, mode: "upsert" | "prepend"): void {
     products = [product, ...snapshot.products];
   }
 
-  setSnapshot({ products, isLoading: false, error: null });
+  setSnapshot({ products, isLoading: false, error: null, hasLoaded: true });
   broadcastProductsChange();
 }
 
@@ -383,6 +384,7 @@ export async function refreshProducts(): Promise<void> {
         products: parseProductsResponse(data),
         isLoading: false,
         error: null,
+        hasLoaded: true,
       });
     } catch (error) {
       if (version !== requestVersion) return;
@@ -480,15 +482,20 @@ export async function setProductStatus(
   return product;
 }
 
-export async function toggleProductStatus(id: string): Promise<Product> {
-  const existing = snapshot.products.find((product) => product.id === id);
-  if (!existing) {
+export async function toggleProductStatus(
+  id: string,
+  currentStatus?: ProductStatus,
+): Promise<Product> {
+  const resolvedStatus =
+    currentStatus ??
+    snapshot.products.find((product) => product.id === id)?.status;
+  if (!resolvedStatus) {
     throw new ProductApiError("Produk tidak ditemukan di daftar.", 404);
   }
 
   return setProductStatus(
     id,
-    existing.status === "ready" ? "sold-out" : "ready",
+    resolvedStatus === "ready" ? "sold-out" : "ready",
   );
 }
 
@@ -502,16 +509,20 @@ export async function deleteProduct(id: string): Promise<void> {
     products: snapshot.products.filter((product) => product.id !== id),
     isLoading: false,
     error: null,
+    hasLoaded: true,
   });
   broadcastProductsChange();
 }
 
 export async function resetProducts(): Promise<Product[]> {
-  const data = await requestJson("/api/products/reset", { method: "POST" });
+  const data = await requestJson("/api/products/reset", {
+    method: "POST",
+    body: JSON.stringify({ confirm: "RESET_KATALOG" }),
+  });
   const products = parseProductsResponse(data);
 
   requestVersion += 1;
-  setSnapshot({ products, isLoading: false, error: null });
+  setSnapshot({ products, isLoading: false, error: null, hasLoaded: true });
   broadcastProductsChange();
 
   return products;

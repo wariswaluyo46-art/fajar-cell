@@ -8,6 +8,13 @@ import {
   isValidPinLength,
   pinMatches,
 } from "@/lib/admin-auth";
+import { readJsonBody } from "@/lib/api-response";
+import {
+  clearRateLimit,
+  getClientKey,
+  getRateLimitStatus,
+  recordRateLimitAttempt,
+} from "@/lib/rate-limit";
 import type {
   AdminLoginResponse,
   AdminLogoutResponse,
@@ -18,35 +25,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 1_024;
-const ATTEMPT_LIMIT = 8;
-const ATTEMPT_WINDOW_MS = 60_000;
-
-interface AttemptRecord {
-  count: number;
-  resetAt: number;
-}
-
-// Throttle sederhana per proses; cukup untuk demo lokal dan mencegah tebak PIN beruntun.
-const attempts = new Map<string, AttemptRecord>();
-
-function getClientKey(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const firstForwarded = forwarded?.split(",")[0]?.trim();
-
-  return firstForwarded || request.headers.get("x-real-ip") || "local";
-}
-
-function getAttemptRecord(key: string, now: number): AttemptRecord {
-  const record = attempts.get(key);
-
-  if (!record || record.resetAt <= now) {
-    const fresh: AttemptRecord = { count: 0, resetAt: now + ATTEMPT_WINDOW_MS };
-    attempts.set(key, fresh);
-    return fresh;
-  }
-
-  return record;
-}
+const ATTEMPT_LIMIT = 5;
+const ATTEMPT_WINDOW_MS = 15 * 60_000;
 
 function json(
   payload: AdminLoginResponse | AdminSessionResponse | AdminLogoutResponse,
@@ -87,36 +67,27 @@ export async function DELETE(): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const now = Date.now();
-  const key = getClientKey(request);
-  const record = getAttemptRecord(key, now);
+  const key = `admin-login:${getClientKey(request)}`;
+  const status = getRateLimitStatus(key, ATTEMPT_LIMIT);
 
-  if (record.count >= ATTEMPT_LIMIT) {
-    const retryAfter = Math.max(1, Math.ceil((record.resetAt - now) / 1_000));
+  if (!status.allowed) {
     return json(
       {
         success: false,
-        error: `Terlalu banyak percobaan PIN. Coba lagi dalam ${retryAfter} detik.`,
+        error: `Terlalu banyak percobaan PIN. Coba lagi dalam ${status.retryAfterSeconds} detik.`,
       },
       429,
-      retryAfter,
+      status.retryAfterSeconds,
     );
   }
 
-  const contentLength = Number(request.headers.get("content-length") ?? "0");
-  if (Number.isFinite(contentLength) && contentLength > MAX_BODY_BYTES) {
-    return json({ success: false, error: "Permintaan terlalu besar." }, 413);
-  }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return json({ success: false, error: "Format permintaan tidak valid." }, 400);
-  }
+  const body = await readJsonBody(request, MAX_BODY_BYTES);
+  if (!body.ok) return body.response;
 
   const pin =
-    isRecord(body) && typeof body.pin === "string" ? body.pin.trim() : "";
+    isRecord(body.value) && typeof body.value.pin === "string"
+      ? body.value.pin.trim()
+      : "";
 
   if (pin === "") {
     return json({ success: false, error: "PIN wajib diisi." }, 400);
@@ -127,7 +98,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (!pinMatches(pin)) {
-    record.count += 1;
+    recordRateLimitAttempt(key, ATTEMPT_WINDOW_MS);
     return json(
       {
         success: false,
@@ -137,7 +108,7 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  attempts.delete(key);
+  clearRateLimit(key);
 
   const { token, loginAt } = createAdminSessionToken();
   const response = json({ success: true, loginAt }, 200);

@@ -17,8 +17,25 @@ export const ADMIN_COOKIE_OPTIONS = {
   maxAge: ADMIN_SESSION_MAX_AGE,
 } as const;
 
+let warnedWeakPin = false;
+let warnedMissingSecret = false;
+
 export function getAdminPin(): string {
-  return process.env.ADMIN_PIN?.trim() || DEFAULT_ADMIN_PIN;
+  const configured = process.env.ADMIN_PIN?.trim();
+  const pin = configured || DEFAULT_ADMIN_PIN;
+
+  if (
+    process.env.NODE_ENV === "production" &&
+    (!configured || pin === DEFAULT_ADMIN_PIN) &&
+    !warnedWeakPin
+  ) {
+    warnedWeakPin = true;
+    console.warn(
+      "[security] ADMIN_PIN di production belum diubah atau masih memakai PIN default (123456). Segera set ADMIN_PIN yang kuat.",
+    );
+  }
+
+  return pin;
 }
 
 export function isValidPinLength(pin: string): boolean {
@@ -41,9 +58,17 @@ export function pinMatches(candidate: string): boolean {
  * demo tetap berjalan; ganti PIN akan otomatis membatalkan semua sesi lama.
  */
 function getSessionSecret(): string {
-  return (
-    process.env.ADMIN_SESSION_SECRET?.trim() || `kfc-admin-session:${getAdminPin()}`
-  );
+  const configured = process.env.ADMIN_SESSION_SECRET?.trim();
+  if (configured) return configured;
+
+  if (process.env.NODE_ENV === "production" && !warnedMissingSecret) {
+    warnedMissingSecret = true;
+    console.warn(
+      "[security] ADMIN_SESSION_SECRET belum diatur di production. Tambahkan secret acak minimal 32 karakter pada environment server.",
+    );
+  }
+
+  return `kfc-admin-session:${getAdminPin()}`;
 }
 
 function sign(payload: string): Buffer {

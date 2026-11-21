@@ -35,6 +35,18 @@ export function isRemoteImageUrl(value: string): boolean {
   }
 }
 
+export function isSupabaseStorageUrl(value: string): boolean {
+  const trimmed = value.trim();
+  if (!/^https:\/\//i.test(trimmed)) return false;
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "https:" && url.hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
 export function isValidImageSource(value: string): boolean {
   return (
     isLocalImagePath(value) ||
@@ -44,12 +56,15 @@ export function isValidImageSource(value: string): boolean {
 }
 
 /**
- * next/image hanya dipakai untuk aset lokal. Data URL dan URL eksternal
- * dirender sebagai <img> agar admin bebas memakai direct link tanpa
- * menambahkan remotePatterns per host.
+ * next/image dipakai untuk aset lokal dan Supabase Storage (diizinkan di next.config.ts
+ * untuk konversi AVIF/WebP otomatis). Data URL dan URL eksternal host acak
+ * dirender sebagai <img> agar admin bebas memakai direct link tanpa error host.
  */
 export function requiresNativeImage(value: string): boolean {
-  return isDataImageUrl(value) || isRemoteImageUrl(value);
+  return (
+    isDataImageUrl(value) ||
+    (isRemoteImageUrl(value) && !isSupabaseStorageUrl(value))
+  );
 }
 
 /**

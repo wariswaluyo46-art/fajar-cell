@@ -1,35 +1,24 @@
-import type {
-  AccessoryProduct,
-  Brand,
-  NewPhoneProduct,
-  Product,
-  ProductCategory,
-  UsedPhoneProduct,
-} from "@/types";
-import { PRODUCT_CATEGORY_PATHS } from "./constants";
+import "server-only";
+
+import type { Brand, Product, ProductCategory } from "@/types";
 
 import productsJson from "@/data/products.json";
+import {
+  getProductPath,
+  isAccessory,
+  isNewPhone,
+  isUsedPhone,
+} from "./product-guards";
+
+export { getProductPath, isAccessory, isNewPhone, isUsedPhone };
 
 /**
- * Data seed dari src/data/products.json untuk HTML awal/SSR dan fallback.
- * JSON tidak membawa literal type, jadi di-cast sekali di sini. Setelah
- * hydration, sumber kebenaran katalog adalah database Supabase lewat API.
+ * Data seed sisi server dari src/data/products.json untuk SSR dan fallback DB.
+ * Tidak diimpor langsung oleh komponen client agar bundle JS pembeli tetap ringan.
  */
 const seedProducts = productsJson as unknown as Product[];
 
 export const products: readonly Product[] = seedProducts;
-
-export function isUsedPhone(product: Product): product is UsedPhoneProduct {
-  return product.category === "handphone-bekas";
-}
-
-export function isNewPhone(product: Product): product is NewPhoneProduct {
-  return product.category === "handphone-baru";
-}
-
-export function isAccessory(product: Product): product is AccessoryProduct {
-  return product.category === "aksesoris";
-}
 
 export function getAllProducts(): Product[] {
   return [...seedProducts];
@@ -56,9 +45,4 @@ export function getAvailableBrands(category?: ProductCategory): Brand[] {
     brands.add(product.brand);
   }
   return [...brands].sort((a, b) => a.localeCompare(b, "id"));
-}
-
-/** Path halaman detail produk sesuai kategorinya. */
-export function getProductPath(product: Product): string {
-  return `${PRODUCT_CATEGORY_PATHS[product.category]}/${product.slug}`;
 }

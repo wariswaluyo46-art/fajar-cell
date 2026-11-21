@@ -16,13 +16,21 @@ import {
   Store,
   XCircle,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AdminLogin } from "@/components/admin/admin-login";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
-import { ProductForm } from "@/components/admin/product-form";
 import { ProductTable } from "@/components/admin/product-table";
+
+const ProductForm = dynamic(
+  () =>
+    import("@/components/admin/product-form").then(
+      (module) => module.ProductForm,
+    ),
+  { ssr: false },
+);
 import { useToast } from "@/components/ui/toast-provider";
 import { useAdminSession } from "@/hooks/use-admin-session";
 import { useProductsState } from "@/hooks/use-products";
@@ -56,7 +64,11 @@ type FilterValue<T extends string> = T | "all";
 
 function AdminLoading() {
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-slate-100 px-4">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="flex min-h-dvh items-center justify-center bg-slate-100 px-4 focus:outline-none"
+    >
       <div className="flex flex-col items-center gap-3 text-center">
         <LoaderCircle
           className="size-7 animate-spin text-royal-700"
@@ -237,7 +249,7 @@ function DashboardContent({
     setPendingStatusId(product.id);
 
     try {
-      const updated = await toggleProductStatus(product.id);
+      const updated = await toggleProductStatus(product.id, product.status);
       showToast({
         variant: "success",
         title: "Stok Produk Diperbarui",
@@ -352,7 +364,11 @@ function DashboardContent({
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8 focus:outline-none"
+      >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full border border-royal-100 bg-royal-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-royal-700 uppercase">
@@ -611,7 +627,7 @@ function DashboardContent({
       {resetOpen && (
         <ConfirmDialog
           title="Reset ke data awal?"
-          description="Semua perubahan admin (tambah, edit, hapus, ubah status) akan dihapus dan katalog kembali memakai 15 data contoh awal."
+          description="Semua perubahan admin (tambah, edit, hapus, ubah status) akan dihapus dan katalog kembali memakai 24 data katalog awal."
           confirmLabel="Reset data"
           tone="warning"
           isPending={isResetting}

@@ -1,7 +1,7 @@
+import { LazyAiAssistant } from "@/components/ai/lazy-ai-assistant";
+import { ProductsProvider } from "@/components/catalog/products-provider";
 import { QuickViewProvider } from "@/components/catalog/quick-view-provider";
-import { AiAssistant } from "@/components/ai/ai-assistant";
 import { Footer } from "@/components/layout/footer";
-import { FloatingWhatsApp } from "@/components/layout/floating-whatsapp";
 import { Navbar } from "@/components/layout/navbar";
 import { Hero } from "@/components/sections/hero";
 import { HomeCatalogs } from "@/components/sections/home-catalogs";
@@ -9,30 +9,28 @@ import { LocationSection } from "@/components/sections/location-section";
 import { ServicePreviewBanner } from "@/components/sections/service-preview-banner";
 import { TradeInSection } from "@/components/sections/trade-in-section";
 import { HeroMarqueeSection } from "@/components/ui/infinite-marquee";
+import { getAllProducts } from "@/lib/products";
 
 export default function HomePage() {
+  const initialProducts = getAllProducts();
+
   return (
     <>
-      <a
-        href="#hp-bekas"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-royal-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
-      >
-        Lewati ke katalog
-      </a>
       <Navbar />
-      <main className="overflow-x-hidden">
-        <QuickViewProvider>
-          <Hero />
-          <HeroMarqueeSection />
-          <HomeCatalogs />
-        </QuickViewProvider>
+      <main id="main-content" tabIndex={-1} className="overflow-x-hidden focus:outline-none">
+        <ProductsProvider initialProducts={initialProducts}>
+          <QuickViewProvider>
+            <Hero />
+            <HeroMarqueeSection />
+            <HomeCatalogs />
+          </QuickViewProvider>
+        </ProductsProvider>
         <ServicePreviewBanner />
         <TradeInSection />
         <LocationSection />
       </main>
       <Footer />
-      <FloatingWhatsApp />
-      <AiAssistant />
+      <LazyAiAssistant />
     </>
   );
 }

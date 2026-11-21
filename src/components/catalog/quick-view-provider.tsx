@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   createContext,
   useCallback,
@@ -10,9 +11,16 @@ import {
   type ReactNode,
 } from "react";
 
-import { ProductQuickView } from "@/components/catalog/product-quick-view";
 import { useProducts } from "@/hooks/use-products";
 import type { Product } from "@/types";
+
+const ProductQuickView = dynamic(
+  () =>
+    import("@/components/catalog/product-quick-view").then(
+      (module) => module.ProductQuickView,
+    ),
+  { ssr: false },
+);
 
 interface QuickViewContextValue {
   openQuickView: (product: Product) => void;

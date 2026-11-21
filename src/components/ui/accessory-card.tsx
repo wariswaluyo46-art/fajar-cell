@@ -86,7 +86,8 @@ export function AccessoryCard({ product, className }: AccessoryCardProps) {
             src={product.thumbnail}
             alt={`Foto ${product.name}`}
             fill
-            sizes="(min-width: 1280px) 280px, (min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw"
+            loading="lazy"
+            sizes="(min-width: 1280px) 280px, (min-width: 1024px) 23vw, (min-width: 640px) 46vw, 92vw"
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             onError={() => setFailedThumbnail(product.thumbnail)}
           />

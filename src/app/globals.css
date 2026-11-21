@@ -294,8 +294,46 @@
   html.elder-mode button,
   html.elder-mode a,
   html.elder-mode input,
-  html.elder-mode select {
+  html.elder-mode select,
+  html.elder-mode textarea {
     min-height: 48px;
+  }
+
+  html.elder-mode button {
+    min-width: 44px;
+  }
+
+  html.elder-mode :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 3px solid #1d43d8 !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px rgba(251, 191, 36, 0.45) !important;
+  }
+
+  /* Hentikan animasi bergerak di mode teks jelas agar lansia tidak pusing */
+  html.elder-mode .animate-marquee,
+  html.elder-mode .animate-marquee-reverse,
+  html.elder-mode .animate-float,
+  html.elder-mode .animate-float-delayed,
+  html.elder-mode .animate-whatsapp-pulse,
+  html.elder-mode .animate-subtle-glow,
+  html.elder-mode .animate-pulse-dot {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  html.elder-mode .marquee-container {
+    overflow-x: auto !important;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+  }
+
+  html.elder-mode .marquee-clone {
+    display: none !important;
+  }
+
+  :is(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid #2457eb;
+    outline-offset: 2px;
   }
 
   body {
@@ -336,5 +374,23 @@
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .animate-marquee,
+  .animate-marquee-reverse,
+  .animate-float,
+  .animate-float-delayed {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .marquee-container {
+    overflow-x: auto !important;
+    mask-image: none !important;
+    -webkit-mask-image: none !important;
+  }
+
+  .marquee-clone {
+    display: none !important;
   }
 }

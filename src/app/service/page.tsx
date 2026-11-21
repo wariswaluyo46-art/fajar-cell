@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { AiAssistant } from "@/components/ai/ai-assistant";
+import { LazyAiAssistant } from "@/components/ai/lazy-ai-assistant";
 import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { LocationSection } from "@/components/sections/location-section";
@@ -30,19 +30,17 @@ export const metadata: Metadata = {
 export default function ServicePage() {
   return (
     <>
-      <a
-        href="#service-estimator"
-        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[60] focus:rounded-lg focus:bg-royal-700 focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
-      >
-        Lewati ke kalkulator servis
-      </a>
       <Navbar />
-      <main className="overflow-x-hidden pt-4 sm:pt-6">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="overflow-x-hidden pt-4 sm:pt-6 focus:outline-none"
+      >
         <ServiceSection />
         <LocationSection />
       </main>
       <Footer />
-      <AiAssistant />
+      <LazyAiAssistant />
     </>
   );
 }

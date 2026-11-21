@@ -6,9 +6,11 @@
 --   3. Salin Project URL dan service_role key dari Project Settings -> API
 --      ke .env.local (lihat .env.example).
 --
--- RLS diaktifkan tanpa policy publik. Aplikasi mengakses tabel lewat API Route
--- Next.js memakai service_role key di server, sehingga browser tidak pernah
--- memegang kunci database. Jangan menaruh service_role key di kode client.
+-- RLS & Principle of Least Privilege:
+--   - Peran publik (`anon`, `authenticated`) hanya diizinkan membaca katalog (`SELECT`).
+--   - Seluruh operasi tulis (`INSERT`, `UPDATE`, `DELETE`) dicabut dari peran publik
+--     dan hanya dapat dijalankan di server menggunakan `service_role` key setelah
+--     sesi admin terverifikasi (jangan menaruh `service_role` key di kode client).
 --
 -- Seed bersifat idempoten: produk dengan id yang sama tidak ditimpa saat file
 -- dijalankan ulang.
@@ -59,6 +61,17 @@ create index if not exists idx_products_updated_at
   on public.products (updated_at desc);
 
 alter table public.products enable row level security;
+
+-- Aturan eksplisit least-privilege: hanya SELECT publik, operasi tulis dikunci ke service_role
+revoke all on table public.products from anon, authenticated;
+grant select on table public.products to anon, authenticated;
+
+drop policy if exists "Public read catalog products" on public.products;
+create policy "Public read catalog products"
+  on public.products
+  for select
+  to anon, authenticated
+  using (true);
 
 insert into public.products (
   id,

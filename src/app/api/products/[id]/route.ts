@@ -8,11 +8,15 @@ import {
   patchProductRecord,
   updateProductRecord,
 } from "@/lib/products-db";
+import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 256 * 1_024;
+const MUTATION_LIMIT = 60;
+const MUTATION_WINDOW_MS = 60_000;
+const PRODUCT_ID_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/;
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -21,7 +25,29 @@ interface RouteContext {
 async function readId(context: RouteContext): Promise<string | null> {
   const { id } = await context.params;
   const value = id.trim();
-  return value !== "" && value.length <= 64 ? value : null;
+  return PRODUCT_ID_PATTERN.test(value) ? value : null;
+}
+
+async function guardAdminMutation(request: Request): Promise<Response | null> {
+  if (!(await getAdminSession())) {
+    return apiError("Sesi admin berakhir. Silakan login ulang.", 401);
+  }
+
+  const limit = checkRateLimit(
+    `admin-products:${getClientKey(request)}`,
+    MUTATION_LIMIT,
+    MUTATION_WINDOW_MS,
+  );
+  if (!limit.allowed) {
+    const response = apiError(
+      "Terlalu banyak permintaan perubahan produk. Tunggu sebentar lalu coba lagi.",
+      429,
+    );
+    response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+    return response;
+  }
+
+  return null;
 }
 
 export async function GET(
@@ -49,9 +75,8 @@ export async function PUT(
   request: Request,
   context: RouteContext,
 ): Promise<Response> {
-  if (!(await getAdminSession())) {
-    return apiError("Sesi admin berakhir. Silakan login ulang.", 401);
-  }
+  const denied = await guardAdminMutation(request);
+  if (denied) return denied;
 
   const id = await readId(context);
   if (!id) return apiError("ID produk tidak valid.", 400);
@@ -76,9 +101,8 @@ export async function PATCH(
   request: Request,
   context: RouteContext,
 ): Promise<Response> {
-  if (!(await getAdminSession())) {
-    return apiError("Sesi admin berakhir. Silakan login ulang.", 401);
-  }
+  const denied = await guardAdminMutation(request);
+  if (denied) return denied;
 
   const id = await readId(context);
   if (!id) return apiError("ID produk tidak valid.", 400);
@@ -100,12 +124,11 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   context: RouteContext,
 ): Promise<Response> {
-  if (!(await getAdminSession())) {
-    return apiError("Sesi admin berakhir. Silakan login ulang.", 401);
-  }
+  const denied = await guardAdminMutation(request);
+  if (denied) return denied;
 
   const id = await readId(context);
   if (!id) return apiError("ID produk tidak valid.", 400);

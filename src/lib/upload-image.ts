@@ -13,7 +13,7 @@ export interface UploadImageResult {
 }
 
 const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export async function uploadProductImage(file: File): Promise<UploadImageResult> {
   const fileNameLower = file.name.toLowerCase();
@@ -28,10 +28,17 @@ export async function uploadProductImage(file: File): Promise<UploadImageResult>
     };
   }
 
+  if (file.size === 0) {
+    return {
+      success: false,
+      error: "File gambar kosong tidak dapat diunggah.",
+    };
+  }
+
   if (file.size > MAX_FILE_SIZE) {
     return {
       success: false,
-      error: "Ukuran file terlalu besar. Maksimal ukuran gambar adalah 5 MB.",
+      error: "Ukuran file terlalu besar. Maksimal ukuran gambar adalah 2 MB.",
     };
   }
 

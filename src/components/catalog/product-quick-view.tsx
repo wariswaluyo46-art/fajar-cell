@@ -197,8 +197,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                 src={currentImage}
                 alt={`Foto ${product.name} (sudut ${activeImageIndex + 1})`}
                 fill
-                priority
-                sizes="(min-width: 640px) 380px, 90vw"
+                sizes="(min-width: 640px) 380px, 92vw"
                 className="object-cover transition-opacity duration-300"
                 onError={() => setFailedThumbnail(currentImage)}
               />
@@ -255,6 +254,7 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
                           src={imgUrl}
                           alt={`Sudut ${index + 1}`}
                           fill
+                          loading="lazy"
                           sizes="64px"
                           className="object-cover"
                         />

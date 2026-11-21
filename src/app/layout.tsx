@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
 import { ToastProvider } from "@/components/ui/toast-provider";
+import { defaultStoreSettings } from "@/lib/store";
 
 import "./globals.css";
 
@@ -86,9 +87,65 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: ReactNode }>) {
+  const store = defaultStoreSettings;
+  const instagramUrl = store.instagram
+    ? `https://www.instagram.com/${store.instagram.replace(/^@/, "")}/`
+    : undefined;
+
+  const localBusinessJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "MobilePhoneStore",
+    name: store.name,
+    description:
+      "Pusat jual beli HP bekas bergaransi, HP baru segel resmi, aksesoris original, tukar tambah, dan service HP bisa ditunggu di Banjarmangu, Banjarnegara.",
+    url: siteUrl,
+    image: `${siteUrl}/images/products/infinix-smart-20.jpg`,
+    telephone: store.displayPhone,
+    priceRange: "Rp 15.000 - Rp 1.500.000",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Jl. Raya Melikan, Desa Kendaga, Kec. Banjarmangu",
+      addressLocality: "Banjarnegara",
+      addressRegion: "Jawa Tengah",
+      postalCode: "53452",
+      addressCountry: "ID",
+    },
+    hasMap: store.mapsUrl,
+    openingHoursSpecification: [
+      {
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+          "Sunday",
+        ],
+        opens: "07:30",
+        closes: "21:00",
+      },
+    ],
+    areaServed: store.codAreas,
+    sameAs: [store.mapsUrl, ...(instagramUrl ? [instagramUrl] : [])],
+  };
+
   return (
     <html lang="id" className={inter.variable}>
       <body className="min-h-dvh bg-[#F8FAFC] font-sans text-slate-900 antialiased overflow-x-hidden">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[120] focus:inline-flex focus:min-h-[48px] focus:items-center focus:rounded-xl focus:bg-royal-700 focus:px-5 focus:py-3 focus:text-sm focus:font-bold focus:text-white focus:shadow-xl focus:outline-2 focus:outline-offset-2 focus:outline-amber-400"
+        >
+          Lewati ke konten utama
+        </a>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(localBusinessJsonLd).replace(/</g, "\\u003c"),
+          }}
+        />
         <ToastProvider>{children}</ToastProvider>
       </body>
     </html>

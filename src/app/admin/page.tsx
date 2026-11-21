@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
+import { ProductsProvider } from "@/components/catalog/products-provider";
+import { getAllProducts } from "@/lib/products";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -13,5 +15,11 @@ export const metadata: Metadata = {
 };
 
 export default function AdminPage() {
-  return <AdminDashboard />;
+  const initialProducts = getAllProducts();
+
+  return (
+    <ProductsProvider initialProducts={initialProducts}>
+      <AdminDashboard />
+    </ProductsProvider>
+  );
 }

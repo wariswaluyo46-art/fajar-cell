@@ -3,11 +3,14 @@ import { apiError, apiJson, readJsonBody } from "@/lib/api-response";
 import { parseProductInput } from "@/lib/product-input";
 import { getAllProducts } from "@/lib/products";
 import { createProductRecord, listProducts } from "@/lib/products-db";
+import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 256 * 1_024;
+const MUTATION_LIMIT = 60;
+const MUTATION_WINDOW_MS = 60_000;
 
 export async function GET(): Promise<Response> {
   try {
@@ -28,6 +31,20 @@ export async function GET(): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   if (!(await getAdminSession())) {
     return apiError("Sesi admin berakhir. Silakan login ulang.", 401);
+  }
+
+  const limit = checkRateLimit(
+    `admin-products:${getClientKey(request)}`,
+    MUTATION_LIMIT,
+    MUTATION_WINDOW_MS,
+  );
+  if (!limit.allowed) {
+    const response = apiError(
+      "Terlalu banyak permintaan perubahan produk. Tunggu sebentar lalu coba lagi.",
+      429,
+    );
+    response.headers.set("Retry-After", String(limit.retryAfterSeconds));
+    return response;
   }
 
   const body = await readJsonBody(request, MAX_BODY_BYTES);

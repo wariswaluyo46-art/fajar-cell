@@ -22,7 +22,7 @@ import { useToast } from "@/components/ui/toast-provider";
 import { WhatsAppLink } from "@/components/ui/whatsapp-link";
 import { useProducts } from "@/hooks/use-products";
 import { requiresNativeImage } from "@/lib/product-images";
-import { isUsedPhone } from "@/lib/products";
+import { isUsedPhone } from "@/lib/product-guards";
 import { cn, formatRupiah } from "@/lib/utils";
 import { buildGeneralInquiryUrl, buildProductInquiryUrl } from "@/lib/whatsapp";
 import type { Product } from "@/types";
@@ -179,11 +179,19 @@ export function Hero() {
     return list;
   }, [featuredPhone1, featuredPhone2]);
 
-  // Auto-slide every 3.5 seconds with Instagram-Story style loop
+  // Auto-slide every 3.5 seconds unless paused, elder-mode, or reduced-motion active
   useEffect(() => {
     if (isPaused || slides.length === 0) return;
 
     const timer = setInterval(() => {
+      const reducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const elderMode =
+        typeof document !== "undefined" &&
+        document.documentElement.classList.contains("elder-mode");
+
+      if (reducedMotion || elderMode) return;
       setActiveSlide((prev) => (prev + 1) % slides.length);
     }, 3500);
 
@@ -394,13 +402,13 @@ export function Hero() {
                   type="button"
                   onClick={() => setIsPaused((prev) => !prev)}
                   title={isPaused ? "Lanjutkan putar otomatis" : "Jeda slide"}
-                  aria-label={isPaused ? "Lanjutkan putar" : "Jeda"}
-                  className="ml-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                  aria-label={isPaused ? "Lanjutkan putar slide showcase" : "Jeda slide showcase"}
+                  className="ml-1 inline-flex size-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 cursor-pointer"
                 >
                   {isPaused ? (
-                    <Play className="size-3" aria-hidden="true" />
+                    <Play className="size-3.5" aria-hidden="true" />
                   ) : (
-                    <Pause className="size-3" aria-hidden="true" />
+                    <Pause className="size-3.5" aria-hidden="true" />
                   )}
                 </button>
               </div>
@@ -424,6 +432,9 @@ export function Hero() {
                     key={currentSlide.image}
                     src={currentSlide.image}
                     alt={currentSlide.title}
+                    loading={activeSlide === 0 ? "eager" : "lazy"}
+                    decoding="async"
+                    referrerPolicy="no-referrer"
                     className="size-full object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
                     onError={() =>
                       setFailedImages((prev) => ({ ...prev, [currentSlide.image]: true }))
@@ -435,8 +446,9 @@ export function Hero() {
                     src={currentSlide.image}
                     alt={currentSlide.title}
                     fill
-                    priority
-                    sizes="(min-width: 1024px) 384px, 90vw"
+                    priority={activeSlide === 0}
+                    loading={activeSlide === 0 ? "eager" : "lazy"}
+                    sizes="(min-width: 1024px) 384px, (min-width: 640px) 448px, 92vw"
                     className="object-cover transition duration-700 ease-out group-hover:scale-[1.04]"
                     onError={() =>
                       setFailedImages((prev) => ({ ...prev, [currentSlide.image]: true }))

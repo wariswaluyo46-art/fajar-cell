@@ -36,7 +36,7 @@ const SUGGESTIONS = [
 ] as const;
 
 const HISTORY_LIMIT = 8;
-const MAX_INPUT_CHARS = 1_200;
+const MAX_INPUT_CHARS = 600;
 
 interface ChatEntry extends AiChatMessage {
   id: string;

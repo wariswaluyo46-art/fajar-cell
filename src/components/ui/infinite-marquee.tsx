@@ -31,7 +31,7 @@ export function InfiniteMarquee({
   return (
     <div
       className={cn(
-        "group relative flex w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]",
+        "marquee-container group relative flex w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)] focus-within:[&_.animate-marquee]:[animation-play-state:paused] focus-within:[&_.animate-marquee-reverse]:[animation-play-state:paused]",
         pauseOnHover && "pause-on-hover",
         speedClass,
         className,
@@ -42,7 +42,7 @@ export function InfiniteMarquee({
       </div>
       <div
         aria-hidden="true"
-        className={cn("flex shrink-0 items-center gap-4 py-2", animationClass)}
+        className={cn("marquee-clone flex shrink-0 items-center gap-4 py-2", animationClass)}
       >
         {children}
       </div>
@@ -79,7 +79,10 @@ const TRUST_SERVICES = [
 
 export function HeroMarqueeSection() {
   return (
-    <div className="relative border-y border-slate-200/80 bg-white/75 py-5 backdrop-blur-md">
+    <section
+      aria-label="Merek dan keunggulan layanan Konter Fajar Cell"
+      className="relative border-y border-slate-200/80 bg-white/75 py-5 backdrop-blur-md"
+    >
       <div className="flex flex-col gap-3">
         {/* Track 1: Brand Ecosystem Loop */}
         <InfiniteMarquee direction="left" speed="normal">
@@ -123,6 +126,6 @@ export function HeroMarqueeSection() {
           ))}
         </InfiniteMarquee>
       </div>
-    </div>
+    </section>
   );
 }

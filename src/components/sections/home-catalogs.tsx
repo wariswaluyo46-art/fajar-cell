@@ -4,7 +4,7 @@ import { AccessoryCatalog } from "@/components/sections/accessory-catalog";
 import { NewPhoneCatalog } from "@/components/sections/new-phone-catalog";
 import { UsedPhoneCatalog } from "@/components/sections/used-phone-catalog";
 import { useProducts } from "@/hooks/use-products";
-import { isAccessory, isNewPhone, isUsedPhone } from "@/lib/products";
+import { isAccessory, isNewPhone, isUsedPhone } from "@/lib/product-guards";
 
 /**
  * Menghubungkan katalog pembeli dengan API produk Supabase.

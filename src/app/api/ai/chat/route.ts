@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 
 const MAX_BODY_BYTES = 24 * 1_024;
 const MAX_MESSAGES = 8;
-const MAX_MESSAGE_CHARS = 1_200;
-const MAX_TOTAL_CHARS = 6_000;
+const MAX_MESSAGE_CHARS = 600;
+const MAX_TOTAL_CHARS = 3_500;
 const RATE_LIMIT = 15;
 const RATE_WINDOW_MS = 60_000;
 
@@ -22,6 +22,15 @@ type ParseResult =
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Bersihkan karakter kontrol & penanda injeksi prompt dari input chat. */
+function sanitizeUserMessage(raw: string): string {
+  return raw
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, " ")
+    .replace(/={3,}\s*(katalog|info toko|keamanan|instruksi)/gi, "--- $1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function parseChatRequest(value: unknown): ParseResult {
@@ -52,7 +61,7 @@ function parseChatRequest(value: unknown): ParseResult {
 
     const role = raw.role;
     const content =
-      typeof raw.content === "string" ? raw.content.trim() : "";
+      typeof raw.content === "string" ? sanitizeUserMessage(raw.content) : "";
 
     if (role !== "user" && role !== "assistant") {
       return { ok: false, error: "Peran pesan tidak valid." };
