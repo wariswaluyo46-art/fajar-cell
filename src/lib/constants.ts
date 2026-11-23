@@ -1,3 +1,4 @@
+import storeJson from "@/data/store.json";
 import type {
   AccessoryType,
   Brand,
@@ -11,9 +12,10 @@ export const SITE = {
   name: "Konter Fajar Cell",
   tagline: "Pusat HP Bekas Bergaransi & Aksesoris Original",
   siteUrl:
-    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
-  whatsappNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? "6285156069234",
+  whatsappNumber:
+    process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.trim() || storeJson.whatsappNumber,
 } as const;
 
 /**

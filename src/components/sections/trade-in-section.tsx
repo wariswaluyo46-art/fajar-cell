@@ -97,6 +97,7 @@ export function TradeInSection() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const { showToast } = useToast();
 
   function updateField<K extends keyof FormState>(
@@ -105,6 +106,7 @@ export function TradeInSection() {
   ) {
     setForm((previous) => ({ ...previous, [key]: value }));
     setSubmitted(false);
+    setWhatsappUrl(null);
     setErrors((previous) => {
       const next = { ...previous };
       delete next[key as keyof FieldErrors];
@@ -120,6 +122,7 @@ export function TradeInSection() {
 
     if (Object.keys(nextErrors).length > 0) {
       setSubmitted(false);
+      setWhatsappUrl(null);
       return;
     }
 
@@ -132,8 +135,10 @@ export function TradeInSection() {
       notes: form.notes.trim() || undefined,
     };
 
-    window.open(buildTradeInUrl(payload), "_blank", "noopener,noreferrer");
+    const targetUrl = buildTradeInUrl(payload);
+    setWhatsappUrl(targetUrl);
     setSubmitted(true);
+    window.open(targetUrl, "_blank", "noopener,noreferrer");
     showToast({
       variant: "info",
       title: "Mengarahkan ke WhatsApp...",
@@ -449,18 +454,31 @@ export function TradeInSection() {
                   Kamu akan diarahkan ke WhatsApp dengan ringkasan data di atas.
                 </p>
 
-                {submitted && (
-                  <p
+                {submitted && whatsappUrl && (
+                  <div
                     role="status"
-                    className="mt-4 flex items-start gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs leading-relaxed font-medium text-emerald-800"
+                    className="mt-4 flex flex-col gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-3.5 text-xs leading-relaxed font-medium text-emerald-800"
                   >
-                    <CheckCircle2
-                      className="mt-0.5 size-4 shrink-0 text-emerald-600"
-                      aria-hidden="true"
-                    />
-                    WhatsApp dibuka di tab baru. Kirim pesannya agar admin bisa
-                    menghitung estimasi harga HP kamu.
-                  </p>
+                    <div className="flex items-start gap-2.5">
+                      <CheckCircle2
+                        className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                        aria-hidden="true"
+                      />
+                      <span>
+                        WhatsApp dibuka di tab baru. Kirim pesannya agar admin bisa
+                        menghitung estimasi harga HP kamu.
+                      </span>
+                    </div>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex w-fit items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-xs transition hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+                    >
+                      <MessageCircle className="size-3.5" aria-hidden="true" />
+                      Buka WhatsApp Sekarang
+                    </a>
+                  </div>
                 )}
               </form>
             </div>
