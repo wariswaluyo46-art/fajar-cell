@@ -3,22 +3,45 @@
 import type {
   AccessoryType,
   Brand,
+  CustomSpecItem,
   ProductCategory,
+  ProductStatus,
 } from "./product";
+import type { ServiceDamageId } from "./service";
 
 export type AiChatRole = "user" | "assistant";
+
+export interface AiRecommendedProduct {
+  id: string;
+  slug: string;
+  name: string;
+  brand: Brand;
+  category: ProductCategory;
+  price: number;
+  thumbnail: string;
+  status: ProductStatus;
+  stock: number;
+  availableStock?: number;
+  reservedByOthers?: number;
+}
 
 export interface AiChatMessage {
   role: AiChatRole;
   content: string;
+  recommendedProducts?: AiRecommendedProduct[];
 }
 
 export interface AiChatRequest {
-  messages: AiChatMessage[];
+  messages: Array<{ role: AiChatRole; content: string }>;
 }
 
 export type AiChatResponse =
-  | { success: true; reply: string; model: string }
+  | {
+      success: true;
+      reply: string;
+      recommendedProducts?: AiRecommendedProduct[];
+      model: string;
+    }
   | { success: false; error: string };
 
 /** Data ringkas dari form admin untuk generator deskripsi. */
@@ -60,4 +83,65 @@ export interface AiDescriptionRequest {
 
 export type AiDescriptionResponse =
   | { success: true; description: string; model: string }
+  | { success: false; error: string };
+
+export interface AiMarketPriceHint {
+  min: number;
+  max: number;
+  note: string;
+}
+
+export interface AiAutofillSpecsData {
+  brand: Brand;
+  specs: {
+    ram?: number;
+    storage?: number;
+    chipset?: string;
+    screen?: string;
+    camera?: string;
+    frontCamera?: string;
+    battery?: number;
+    network?: string;
+    os?: string;
+    customSpecs?: CustomSpecItem[];
+  };
+  recommendedTags: string[];
+  shortDescription: string;
+  marketPriceHint: AiMarketPriceHint | null;
+  confidenceNote: string;
+}
+
+export type AiAutofillSpecsResponse =
+  | { success: true; data: AiAutofillSpecsData; model: string }
+  | { success: false; error: string };
+
+export interface AiCompareCategoryWinner {
+  winnerId: string;
+  winnerName: string;
+  reason: string;
+}
+
+export interface AiCompareVerdict {
+  summary: string;
+  winnerByCategory: {
+    gaming: AiCompareCategoryWinner;
+    battery: AiCompareCategoryWinner;
+    camera: AiCompareCategoryWinner;
+    parents: AiCompareCategoryWinner;
+    value: AiCompareCategoryWinner;
+  };
+}
+
+export type AiCompareResponse =
+  | { success: true; verdict: AiCompareVerdict; model: string }
+  | { success: false; error: string };
+
+export type AiDiagnoseServiceResponse =
+  | {
+      success: true;
+      damageIds: ServiceDamageId[];
+      reasoning: string;
+      firstAidTip: string;
+      model: string;
+    }
   | { success: false; error: string };

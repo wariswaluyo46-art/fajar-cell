@@ -31,6 +31,12 @@ export type AccessoryType =
   | "case"
   | "lainnya";
 
+/** Spesifikasi tambahan bebas (key-value) untuk unit HP. */
+export interface CustomSpecItem {
+  key: string;
+  value: string;
+}
+
 /** Spesifikasi teknis singkat yang tampil di card produk. */
 export interface PhoneSpecs {
   /** RAM dalam GB. */
@@ -42,6 +48,10 @@ export interface PhoneSpecs {
   /** Kapasitas baterai dalam mAh. */
   battery?: number;
   camera?: string;
+  frontCamera?: string;
+  network?: string;
+  os?: string;
+  customSpecs?: CustomSpecItem[];
 }
 
 /** Kondisi fisik unit bekas. */

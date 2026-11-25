@@ -2,12 +2,14 @@
 
 import {
   Clock,
+  ExternalLink,
   ImageIcon,
   LoaderCircle,
   ShieldCheck,
   ShoppingCart,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { useCart } from "@/components/cart/cart-provider";
@@ -74,15 +76,28 @@ function getSpecRows(product: Product): SpecRow[] {
       value: product.specs.screen ?? "Tanyakan admin",
     },
     {
-      label: "Kamera",
+      label: "Kamera belakang",
       value: product.specs.camera ?? "Tanyakan admin",
     },
+    ...(product.specs.frontCamera
+      ? [{ label: "Kamera depan", value: product.specs.frontCamera }]
+      : []),
     {
       label: "Kapasitas baterai",
       value: product.specs.battery
         ? `${product.specs.battery} mAh`
         : "Tanyakan admin",
     },
+    ...(product.specs.network
+      ? [{ label: "Jaringan", value: product.specs.network }]
+      : []),
+    ...(product.specs.os
+      ? [{ label: "Sistem operasi", value: product.specs.os }]
+      : []),
+    ...(product.specs.customSpecs ?? []).map((item) => ({
+      label: item.key,
+      value: item.value,
+    })),
     {
       label: "Kesehatan baterai",
       value: isUsed
@@ -230,6 +245,15 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
             >
               Tanya Unit Ini via WA
             </WhatsAppLink>
+
+            <Link
+              href={`/produk/${encodeURIComponent(product.slug)}`}
+              onClick={onClose}
+              className="inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-50 sm:w-auto"
+            >
+              <span>Halaman Detail</span>
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </Link>
           </div>
         </div>
       }

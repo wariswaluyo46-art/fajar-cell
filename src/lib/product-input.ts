@@ -1,6 +1,7 @@
 import type {
   AccessoryType,
   Brand,
+  CustomSpecItem,
   PhoneSpecs,
   ProductCategory,
   ProductInput,
@@ -104,12 +105,37 @@ function parseStringList(value: unknown, maxItems: number): string[] {
   return result;
 }
 
+function parseCustomSpecs(value: unknown): CustomSpecItem[] {
+  if (!Array.isArray(value)) return [];
+
+  const seen = new Set<string>();
+  const result: CustomSpecItem[] = [];
+
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const key = asString(item.key, 60);
+    const val = asString(item.value, 140);
+    if (!key || !val) continue;
+
+    const lowered = key.toLowerCase();
+    if (seen.has(lowered)) continue;
+    seen.add(lowered);
+    result.push({ key, value: val });
+    if (result.length >= 15) break;
+  }
+
+  return result;
+}
+
 function parseSpecs(value: unknown): PhoneSpecs | null {
   if (!isRecord(value)) return null;
 
-  const ram = asInteger(value.ram);
+  const ram =
+    typeof value.ram === "number" && Number.isFinite(value.ram)
+      ? value.ram
+      : null;
   const storage = asInteger(value.storage);
-  if (ram === null || ram <= 0 || storage === null || storage <= 0) {
+  if (ram === null || ram <= 0 || ram > 128 || storage === null || storage <= 0) {
     return null;
   }
 
@@ -118,12 +144,20 @@ function parseSpecs(value: unknown): PhoneSpecs | null {
   const chipset = asString(value.chipset, 120);
   const screen = asString(value.screen, 160);
   const camera = asString(value.camera, 120);
+  const frontCamera = asString(value.frontCamera, 120);
+  const network = asString(value.network, 60);
+  const os = asString(value.os, 80);
   const battery = asInteger(value.battery);
+  const customSpecs = parseCustomSpecs(value.customSpecs);
 
   if (chipset) specs.chipset = chipset;
   if (screen) specs.screen = screen;
   if (camera) specs.camera = camera;
+  if (frontCamera) specs.frontCamera = frontCamera;
+  if (network) specs.network = network;
+  if (os) specs.os = os;
   if (battery !== null && battery > 0) specs.battery = battery;
+  if (customSpecs.length > 0) specs.customSpecs = customSpecs;
 
   return specs;
 }

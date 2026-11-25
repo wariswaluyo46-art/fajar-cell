@@ -15,7 +15,7 @@ import {
 import { CartDrawer } from "@/components/cart/cart-drawer";
 import { useToast } from "@/components/ui/toast-provider";
 import { notifyProductsChanged } from "@/lib/product-repository";
-import type { CartItem, Product } from "@/types";
+import type { CartItem } from "@/types";
 
 const CART_CHANNEL_NAME = "kfc-cart-sync";
 
@@ -42,7 +42,10 @@ interface CartContextValue {
   closeDrawer: () => void;
   toggleDrawer: () => void;
   refreshCart: () => Promise<void>;
-  addToCart: (product: Product, delta?: number) => Promise<boolean>;
+  addToCart: (
+    product: { id: string; name: string },
+    delta?: number,
+  ) => Promise<boolean>;
   updateItemQuantity: (productId: string, nextQty: number) => Promise<boolean>;
   removeItem: (productId: string) => Promise<boolean>;
   clearCart: () => Promise<void>;
@@ -228,7 +231,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const addToCart = useCallback(
-    async (product: Product, delta = 1): Promise<boolean> => {
+    async (
+      product: { id: string; name: string },
+      delta = 1,
+    ): Promise<boolean> => {
       const existingQty =
         items.find((item) => item.productId === product.id)?.quantity ?? 0;
       const targetQty = existingQty + delta;

@@ -3,6 +3,7 @@
 import type {
   AccessoryType,
   Brand,
+  CustomSpecItem,
   ProductCategory,
   ProductStatus,
 } from "./product";
@@ -49,6 +50,14 @@ export interface ProductFormValues {
   color: string;
   ram: string;
   storage: string;
+  chipset: string;
+  screen: string;
+  camera: string;
+  frontCamera: string;
+  battery: string;
+  network: string;
+  os: string;
+  customSpecs: CustomSpecItem[];
 
   /** Hanya HP bekas. */
   conditionGrade: string;

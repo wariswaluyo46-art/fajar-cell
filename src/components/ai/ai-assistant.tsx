@@ -2,14 +2,17 @@
 
 import {
   AlertCircle,
+  ArrowUpRight,
   Bot,
   LoaderCircle,
   MessageCircle,
   RotateCcw,
   Send,
+  ShoppingCart,
   Sparkles,
   X,
 } from "lucide-react";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -20,10 +23,11 @@ import {
   type KeyboardEvent,
 } from "react";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { useToast } from "@/components/ui/toast-provider";
-import { cn } from "@/lib/utils";
+import { cn, formatRupiah } from "@/lib/utils";
 import { buildGeneralInquiryUrl } from "@/lib/whatsapp";
-import type { AiChatMessage } from "@/types";
+import type { AiChatMessage, AiRecommendedProduct } from "@/types";
 
 const GREETING =
   "Halo! Saya Fajar AI, asisten belanja Konter Fajar Cell. Tanyakan HP bekas, HP baru, aksesoris, atau tukar tambah — saya bantu carikan sesuai budget dan kebutuhan.";
@@ -90,6 +94,7 @@ export function AiAssistant() {
   const panelId = useId();
   const inputId = `${panelId}-input`;
   const { showToast } = useToast();
+  const { addToCart, getItemQuantity, pendingProductId } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatEntry[]>([
     { id: "greeting", role: "assistant", content: GREETING },
@@ -152,12 +157,17 @@ export function AiAssistant() {
         return;
       }
 
+      const recommendedProducts = Array.isArray(data.recommendedProducts)
+        ? (data.recommendedProducts as AiRecommendedProduct[])
+        : [];
+
       setMessages((current) => [
         ...current,
         {
           id: createId(),
           role: "assistant",
           content: reply,
+          recommendedProducts,
         },
       ]);
     } catch {
@@ -363,8 +373,8 @@ export function AiAssistant() {
               <div
                 key={message.id}
                 className={cn(
-                  "flex",
-                  message.role === "user" ? "justify-end" : "justify-start",
+                  "flex flex-col gap-2",
+                  message.role === "user" ? "items-end" : "items-start",
                 )}
               >
                 <div
@@ -377,6 +387,83 @@ export function AiAssistant() {
                 >
                   {message.content}
                 </div>
+
+                {message.role === "assistant" &&
+                  message.recommendedProducts &&
+                  message.recommendedProducts.length > 0 && (
+                    <div className="flex w-full max-w-[92%] flex-col gap-2">
+                      {message.recommendedProducts.map((rec) => {
+                        const cartQty = getItemQuantity(rec.id);
+                        const effStock =
+                          rec.status !== "ready"
+                            ? 0
+                            : (rec.availableStock ?? rec.stock);
+                        const canAdd =
+                          rec.status === "ready" && effStock - cartQty > 0;
+                        const isPending = pendingProductId === rec.id;
+
+                        return (
+                          <div
+                            key={rec.id}
+                            className="flex items-center gap-2.5 rounded-2xl border border-slate-200 bg-white p-2.5 shadow-xs"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={rec.thumbnail}
+                              alt={rec.name}
+                              className="size-12 shrink-0 rounded-xl border border-slate-100 object-cover"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-extrabold text-slate-900">
+                                {rec.name}
+                              </p>
+                              <p className="text-xs font-black text-royal-700">
+                                {formatRupiah(rec.price)}
+                              </p>
+                              <p className="text-[10px] font-semibold text-slate-500">
+                                {rec.status !== "ready"
+                                  ? "Sold Out"
+                                  : effStock > 0
+                                    ? `Ready (${effStock} unit)`
+                                    : "Sedang dipesan orang lain"}
+                              </p>
+                            </div>
+
+                            <div className="flex shrink-0 flex-col gap-1">
+                              <button
+                                type="button"
+                                disabled={!canAdd || isPending}
+                                onClick={() => {
+                                  void addToCart({
+                                    id: rec.id,
+                                    name: rec.name,
+                                  });
+                                }}
+                                className="inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-brand-gradient px-2.5 text-[10px] font-extrabold text-white disabled:opacity-45 cursor-pointer disabled:cursor-not-allowed"
+                              >
+                                <ShoppingCart
+                                  className="size-3 shrink-0"
+                                  aria-hidden="true"
+                                />
+                                <span>+ Keranjang</span>
+                              </button>
+                              <Link
+                                href={`/produk/${encodeURIComponent(rec.slug)}`}
+                                onClick={() => setIsOpen(false)}
+                                className="inline-flex h-7 items-center justify-center gap-0.5 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-700 hover:bg-royal-50 hover:text-royal-700"
+                              >
+                                <span>Detail</span>
+                                <ArrowUpRight
+                                  className="size-3 shrink-0"
+                                  aria-hidden="true"
+                                />
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
               </div>
             ))}
 

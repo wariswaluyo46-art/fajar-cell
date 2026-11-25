@@ -1,4 +1,5 @@
 import type {
+  CustomSpecItem,
   PhoneSpecs,
   Product,
   ProductFormValues,
@@ -51,6 +52,35 @@ function splitList(value: string): string[] {
     });
 }
 
+function toPositiveNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") return null;
+
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+
+  return parsed;
+}
+
+function sanitizeCustomSpecs(items: CustomSpecItem[]): CustomSpecItem[] {
+  const seen = new Set<string>();
+  const result: CustomSpecItem[] = [];
+
+  for (const item of items) {
+    const key = item.key.trim().slice(0, 60);
+    const value = item.value.trim().slice(0, 140);
+    if (!key || !value) continue;
+
+    const lowered = key.toLowerCase();
+    if (seen.has(lowered)) continue;
+    seen.add(lowered);
+    result.push({ key, value });
+    if (result.length >= 15) break;
+  }
+
+  return result;
+}
+
 export function createProductFormValues(
   product?: Product | null,
 ): ProductFormValues {
@@ -71,6 +101,14 @@ export function createProductFormValues(
       color: "",
       ram: "",
       storage: "",
+      chipset: "",
+      screen: "",
+      camera: "",
+      frontCamera: "",
+      battery: "",
+      network: "",
+      os: "",
+      customSpecs: [],
       conditionGrade: "Mulus 95%",
       conditionLabel: "Fullset Original",
       minusCount: "0",
@@ -112,6 +150,19 @@ export function createProductFormValues(
     color: isPhone ? product.color : "",
     ram: isPhone ? String(product.specs.ram) : "",
     storage: isPhone ? String(product.specs.storage) : "",
+    chipset: isPhone ? (product.specs.chipset ?? "") : "",
+    screen: isPhone ? (product.specs.screen ?? "") : "",
+    camera: isPhone ? (product.specs.camera ?? "") : "",
+    frontCamera: isPhone ? (product.specs.frontCamera ?? "") : "",
+    battery:
+      isPhone && product.specs.battery !== undefined
+        ? String(product.specs.battery)
+        : "",
+    network: isPhone ? (product.specs.network ?? "") : "",
+    os: isPhone ? (product.specs.os ?? "") : "",
+    customSpecs: isPhone
+      ? (product.specs.customSpecs ?? []).map((item) => ({ ...item }))
+      : [],
     conditionGrade: isUsed ? product.condition.grade : "Mulus 95%",
     conditionLabel: isUsed ? product.condition.label : "Fullset Original",
     minusCount: isUsed ? String(product.condition.minusCount) : "0",
@@ -195,14 +246,21 @@ export function validateProductForm(
   }
 
   if (values.category !== "aksesoris") {
-    const ram = toInteger(values.ram);
+    const ram = toPositiveNumber(values.ram);
     const storage = toInteger(values.storage);
 
-    if (ram === null || ram <= 0) {
-      errors.ram = "RAM wajib diisi (contoh: 8).";
+    if (ram === null || ram <= 0 || ram > 128) {
+      errors.ram = "RAM wajib diisi (contoh: 4 atau 8).";
     }
     if (storage === null || storage <= 0) {
       errors.storage = "Penyimpanan wajib diisi (contoh: 256).";
+    }
+
+    if (values.battery.trim() !== "") {
+      const battery = toInteger(values.battery);
+      if (battery === null || battery < 500 || battery > 25_000) {
+        errors.battery = "Kapasitas baterai harus antara 500 - 25.000 mAh.";
+      }
     }
 
     const warrantyDays = toInteger(values.warrantyDurationDays);
@@ -288,14 +346,22 @@ export function productFormValuesToInput(
     };
   }
 
+  const battery = toInteger(values.battery);
+  const customSpecs = sanitizeCustomSpecs(values.customSpecs ?? []);
+
   const specs: PhoneSpecs = {
-    ...(existing &&
-    (existing.category === "handphone-bekas" ||
-      existing.category === "handphone-baru")
-      ? existing.specs
-      : {}),
-    ram: Math.max(0, toInteger(values.ram) ?? 0),
+    ram: toPositiveNumber(values.ram) ?? 0,
     storage: Math.max(0, toInteger(values.storage) ?? 0),
+    ...(values.chipset.trim() ? { chipset: values.chipset.trim() } : {}),
+    ...(values.screen.trim() ? { screen: values.screen.trim() } : {}),
+    ...(values.camera.trim() ? { camera: values.camera.trim() } : {}),
+    ...(values.frontCamera.trim()
+      ? { frontCamera: values.frontCamera.trim() }
+      : {}),
+    ...(battery !== null && battery > 0 ? { battery } : {}),
+    ...(values.network.trim() ? { network: values.network.trim() } : {}),
+    ...(values.os.trim() ? { os: values.os.trim() } : {}),
+    ...(customSpecs.length > 0 ? { customSpecs } : {}),
   };
 
   const warranty: Warranty = {

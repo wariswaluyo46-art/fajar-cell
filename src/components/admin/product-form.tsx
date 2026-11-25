@@ -9,6 +9,7 @@ import { ImageUploadSection } from "@/components/admin/product-form/image-upload
 import { PricingStockFields } from "@/components/admin/product-form/pricing-stock-fields";
 import { SpecsFields } from "@/components/admin/product-form/specs-fields";
 import { Modal } from "@/components/ui/modal";
+import { useToast } from "@/components/ui/toast-provider";
 import {
   createProductFormValues,
   productFormValuesToInput,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/product-form";
 import { getFallbackThumbnail, isRemoteImageUrl } from "@/lib/product-images";
 import type {
+  AiAutofillSpecsData,
   Product,
   ProductCategory,
   ProductFormValues,
@@ -31,12 +33,17 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSave, onClose }: ProductFormProps) {
   const formId = useId();
+  const { showToast } = useToast();
   const [values, setValues] = useState<ProductFormValues>(() =>
     createProductFormValues(product),
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutofilling, setIsAutofilling] = useState(false);
+  const [onlyFillEmpty, setOnlyFillEmpty] = useState(() => Boolean(product));
+  const [autofillHint, setAutofillHint] =
+    useState<AiAutofillSpecsData | null>(null);
   const [previewSource, setPreviewSource] = useState(() =>
     values.thumbnail.trim(),
   );
@@ -181,6 +188,91 @@ export function ProductForm({ product, onSave, onClose }: ProductFormProps) {
     }));
   }
 
+  async function handleAutofillSpecs() {
+    if (isAutofilling || values.name.trim().length < 4) return;
+
+    setIsAutofilling(true);
+    try {
+      const res = await fetch("/api/ai/autofill-specs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.name.trim(),
+          category: values.category,
+        }),
+      });
+
+      const payload = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        data?: AiAutofillSpecsData;
+      } | null;
+
+      if (!res.ok || !payload?.success || !payload.data) {
+        showToast({
+          variant: "error",
+          title: "Gagal auto-fill AI",
+          description:
+            payload?.error ?? "Asisten AI tidak dapat mengisi spesifikasi saat ini.",
+        });
+        return;
+      }
+
+      const aiData = payload.data;
+      setAutofillHint(aiData);
+
+      setValues((current) => {
+        const pick = (existingVal: string, nextVal?: string | number) => {
+          const strNext =
+            nextVal !== undefined && nextVal !== null ? String(nextVal) : "";
+          if (!strNext) return existingVal;
+          if (onlyFillEmpty && existingVal.trim() !== "") return existingVal;
+          return strNext;
+        };
+
+        const nextCustomSpecs =
+          onlyFillEmpty && current.customSpecs.length > 0
+            ? current.customSpecs
+            : (aiData.specs.customSpecs ?? current.customSpecs);
+
+        return {
+          ...current,
+          brand:
+            onlyFillEmpty && current.brand !== "Samsung"
+              ? current.brand
+              : aiData.brand,
+          ram: pick(current.ram, aiData.specs.ram),
+          storage: pick(current.storage, aiData.specs.storage),
+          chipset: pick(current.chipset, aiData.specs.chipset),
+          screen: pick(current.screen, aiData.specs.screen),
+          camera: pick(current.camera, aiData.specs.camera),
+          frontCamera: pick(current.frontCamera, aiData.specs.frontCamera),
+          battery: pick(current.battery, aiData.specs.battery),
+          network: pick(current.network, aiData.specs.network),
+          os: pick(current.os, aiData.specs.os),
+          customSpecs: nextCustomSpecs,
+          description: pick(current.description, aiData.shortDescription),
+        };
+      });
+
+      setErrors({});
+      showToast({
+        variant: "success",
+        title: "Spesifikasi diisi oleh AI",
+        description:
+          "Periksa kembali spesifikasi & harga jual sebelum menyimpan produk.",
+      });
+    } catch {
+      showToast({
+        variant: "error",
+        title: "Koneksi bermasalah",
+        description: "Tidak dapat menghubungi layanan AI.",
+      });
+    } finally {
+      setIsAutofilling(false);
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSaving) return;
@@ -278,12 +370,20 @@ export function ProductForm({ product, onSave, onClose }: ProductFormProps) {
           onUpdate={update}
           onCategoryChange={handleCategoryChange}
           onStatusChange={handleStatusChange}
+          isAutofilling={isAutofilling}
+          onlyFillEmpty={onlyFillEmpty}
+          onOnlyFillEmptyChange={setOnlyFillEmpty}
+          onAutofillSpecs={() => {
+            void handleAutofillSpecs();
+          }}
+          autofillHint={autofillHint}
         />
 
         <PricingStockFields
           values={values}
           errors={errors}
           onUpdate={update}
+          marketPriceHint={autofillHint?.marketPriceHint}
         />
 
         <SpecsFields values={values} errors={errors} onUpdate={update} />

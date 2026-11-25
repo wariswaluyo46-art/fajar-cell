@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ChevronDown,
   Headphones,
   Home,
   MapPin,
@@ -19,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/cart/cart-provider";
 import { Container } from "@/components/ui/container";
@@ -40,11 +41,37 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "#lokasi": MapPin,
 };
 
+const CATALOG_DROPDOWN_ITEMS = [
+  {
+    label: "HP Bekas",
+    desc: "Second lolos cek teknisi & bergaransi",
+    href: "#hp-bekas",
+    icon: Smartphone,
+  },
+  {
+    label: "HP Baru",
+    desc: "Unit baru segel garansi resmi",
+    href: "#hp-baru",
+    icon: Sparkles,
+  },
+  {
+    label: "Aksesoris",
+    desc: "Charger, kabel, TWS & pelindung layar",
+    href: "#aksesoris",
+    icon: Headphones,
+  },
+] as const;
+
+const CATALOG_HASHES = new Set<string>(
+  CATALOG_DROPDOWN_ITEMS.map((item) => item.href),
+);
+
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
 
   const [isOpen, setIsOpen] = useState(false);
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>(
     pathname === "/service" || pathname === "/lacak"
       ? pathname
@@ -54,9 +81,11 @@ export function Navbar() {
   const [isElderMode, setIsElderMode] = useState(false);
   const { totalQuantity, openDrawer } = useCart();
 
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const hoverCloseTimer = useRef<number | null>(null);
+
   const store = defaultStoreSettings;
 
-  // Initialize Elder Mode from localStorage on client-side
   useEffect(() => {
     try {
       const stored = localStorage.getItem("kfc_elder_mode") === "true";
@@ -108,6 +137,41 @@ export function Navbar() {
     };
   }, [isOpen]);
 
+  // Close desktop Katalog dropdown on Escape or outside click
+  useEffect(() => {
+    if (!catalogOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setCatalogOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCatalogOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [catalogOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (hoverCloseTimer.current !== null) {
+        window.clearTimeout(hoverCloseTimer.current);
+      }
+    };
+  }, []);
+
   // Robust ScrollSpy when on homepage
   useEffect(() => {
     if (pathname !== "/") {
@@ -117,9 +181,9 @@ export function Navbar() {
       return;
     }
 
-    const sectionIds = NAV_ITEMS.filter((item) => item.href.startsWith("#")).map(
-      (item) => item.href.replace("#", ""),
-    );
+    const sectionIds = NAV_ITEMS.filter((item) =>
+      item.href.startsWith("#"),
+    ).map((item) => item.href.replace("#", ""));
 
     const handleScrollSpy = () => {
       const scrollPosition = window.scrollY + 130;
@@ -156,9 +220,11 @@ export function Navbar() {
     };
   }, [pathname]);
 
-  const closeMenu = () => setIsOpen(false);
+  const closeMenu = () => {
+    setIsOpen(false);
+    setCatalogOpen(false);
+  };
 
-  // Smooth scroll handler dengan offset kompensasi floating navbar & multi-page router
   const handleNavClick = (
     event: React.MouseEvent<HTMLAnchorElement>,
     href: string,
@@ -167,7 +233,6 @@ export function Navbar() {
 
     if (href.startsWith("#")) {
       if (pathname !== "/") {
-        // Jika sedang di halaman /service, arahkan kembali ke homepage dengan anchor
         router.push(`/${href}`);
         return;
       }
@@ -179,7 +244,8 @@ export function Navbar() {
       if (targetElement) {
         const headerOffset = 90;
         const elementPosition = targetElement.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+        const offsetPosition =
+          elementPosition + window.pageYOffset - headerOffset;
 
         window.scrollTo({
           top: offsetPosition,
@@ -192,10 +258,37 @@ export function Navbar() {
         }
       }
     } else {
-      // Navigasi route biasa (misal: /service)
       setActiveSection(href);
     }
   };
+
+  const openCatalogDropdown = () => {
+    if (hoverCloseTimer.current !== null) {
+      window.clearTimeout(hoverCloseTimer.current);
+      hoverCloseTimer.current = null;
+    }
+    setCatalogOpen(true);
+  };
+
+  const scheduleCloseCatalogDropdown = () => {
+    if (hoverCloseTimer.current !== null) {
+      window.clearTimeout(hoverCloseTimer.current);
+    }
+    hoverCloseTimer.current = window.setTimeout(() => {
+      setCatalogOpen(false);
+      hoverCloseTimer.current = null;
+    }, 150);
+  };
+
+  const isCatalogActive = pathname === "/" && CATALOG_HASHES.has(activeSection);
+
+  const desktopLinkClass = (active: boolean) =>
+    cn(
+      "inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-xs xl:text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600",
+      active
+        ? "bg-brand-gradient font-bold text-white shadow-md shadow-royal-600/25"
+        : "text-slate-700 hover:bg-royal-50/90 hover:text-royal-700",
+    );
 
   return (
     <>
@@ -203,36 +296,47 @@ export function Navbar() {
       <div className="bg-gradient-to-r from-royal-950 via-[#1E1B4B] to-royal-950 text-royal-100 text-[10px] sm:text-[11px] font-medium py-1.5 border-b border-white/5">
         <Container className="flex items-center justify-between gap-3">
           <p className="inline-flex items-center gap-1.5 truncate">
-            <ShieldCheck className="size-3 sm:size-3.5 text-cyan-400 shrink-0" aria-hidden="true" />
-            <span className="truncate">Garansi Toko Resmi • Unit Original • Siap COD Banjarnegara</span>
+            <ShieldCheck
+              className="size-3 sm:size-3.5 text-cyan-400 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="truncate">
+              Garansi Toko Resmi • Unit Original • Siap COD Banjarnegara
+            </span>
           </p>
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            {/* Tombol Aksesibilitas "Mode Teks Jelas" untuk Orang Tua & Lansia */}
             <button
               type="button"
               onClick={toggleElderMode}
               aria-pressed={isElderMode}
               title="Perbesar huruf & pertajam kontras agar mudah dibaca"
               className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer active:scale-95",
+                "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-bold whitespace-nowrap transition-all duration-200 cursor-pointer active:scale-95",
                 isElderMode
                   ? "bg-amber-400 text-slate-950 shadow-xs shadow-amber-400/30"
                   : "bg-white/10 text-royal-200 hover:bg-white/20 hover:text-white",
               )}
             >
               <Type className="size-3 shrink-0" aria-hidden="true" />
-              <span>{isElderMode ? "Mode Jelas: AKTIF" : "Aa Perjelas Teks"}</span>
+              <span>
+                {isElderMode ? "Mode Jelas: AKTIF" : "Aa Perjelas Teks"}
+              </span>
             </button>
 
-            <span className="hidden sm:inline-block text-royal-300">Setiap Hari : 07.30 - 21.00</span>
-            <span className="hidden sm:inline-block h-3 w-px bg-white/20" aria-hidden="true" />
+            <span className="hidden md:inline-block whitespace-nowrap text-royal-300">
+              Setiap Hari : 07.30 - 21.00
+            </span>
+            <span
+              className="hidden md:inline-block h-3 w-px bg-white/20"
+              aria-hidden="true"
+            />
             <a
               href={buildGeneralInquiryUrl()}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 font-semibold text-emerald-400 transition-colors hover:text-emerald-300"
+              className="inline-flex items-center gap-1 font-semibold whitespace-nowrap text-emerald-400 transition-colors hover:text-emerald-300"
             >
-              <MessageCircle className="size-3 sm:size-3.5" aria-hidden="true" />
+              <MessageCircle className="size-3 sm:size-3.5 shrink-0" aria-hidden="true" />
               <span>{store.displayPhone}</span>
             </a>
           </div>
@@ -249,95 +353,188 @@ export function Navbar() {
               : "bg-white/90 border-white/40 shadow-lg shadow-slate-900/5 supports-[backdrop-filter]:bg-white/85",
           )}
         >
-          <div className="flex h-15 sm:h-16 items-center justify-between px-3 sm:px-5 gap-3">
+          <div className="flex min-h-16 items-center justify-between px-3 sm:px-5 gap-3">
             {/* Logo Brand */}
             <Link
               href="/"
               onClick={(event) => handleNavClick(event, "#beranda")}
-              className="flex items-center gap-2.5 rounded-xl transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600 shrink-0"
+              className="flex items-center gap-2.5 rounded-xl whitespace-nowrap transition-transform active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600 shrink-0"
             >
-              <span className="flex size-9.5 sm:size-10 items-center justify-center rounded-xl bg-brand-gradient text-sm font-extrabold tracking-tight text-white shadow-md shadow-royal-600/30">
+              <span className="flex size-9.5 sm:size-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-sm font-extrabold tracking-tight text-white shadow-md shadow-royal-600/30">
                 FC
               </span>
               <span className="flex flex-col leading-tight">
-                <span className="text-[14px] font-extrabold tracking-tight text-slate-900 sm:text-base">
+                <span className="text-[14px] font-extrabold tracking-tight text-slate-900 sm:text-base whitespace-nowrap">
                   Konter Fajar Cell
                 </span>
-                <span className="hidden text-[10px] font-semibold text-slate-500 sm:block">
+                <span className="hidden text-[10px] font-semibold text-slate-500 xl:block whitespace-nowrap">
                   HP Bekas Bergaransi • Servis HP • Siap COD
                 </span>
               </span>
             </Link>
 
-            {/* Desktop Navigation Links dengan Ikon Mini Elegan */}
+            {/* Desktop Navigation: 5 Item Utama yang Lapang & Bersih */}
             <nav
-              className="hidden items-center gap-1 xl:gap-1.5 lg:flex"
+              className="hidden items-center gap-1 lg:flex"
               aria-label="Navigasi utama"
             >
-              {NAV_ITEMS.map((item) => {
-                const isActive = item.href.startsWith("/")
-                  ? pathname === item.href
-                  : activeSection === item.href && pathname === "/";
-                const Icon = NAV_ICONS[item.href] ?? Home;
+              <Link
+                href={pathname === "/" ? "#beranda" : "/#beranda"}
+                onClick={(event) => handleNavClick(event, "#beranda")}
+                aria-current={
+                  pathname === "/" && activeSection === "#beranda"
+                    ? "location"
+                    : undefined
+                }
+                className={desktopLinkClass(
+                  pathname === "/" && activeSection === "#beranda",
+                )}
+              >
+                Beranda
+              </Link>
 
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href.startsWith("#") && pathname !== "/" ? `/${item.href}` : item.href}
-                    onClick={(event) => handleNavClick(event, item.href)}
-                    aria-current={isActive ? "location" : undefined}
+              {/* Dropdown Katalog */}
+              <div
+                ref={dropdownRef}
+                className="relative"
+                onMouseEnter={openCatalogDropdown}
+                onMouseLeave={scheduleCloseCatalogDropdown}
+              >
+                <button
+                  type="button"
+                  aria-expanded={catalogOpen}
+                  aria-haspopup="menu"
+                  onClick={() => setCatalogOpen((prev) => !prev)}
+                  className={desktopLinkClass(isCatalogActive || catalogOpen)}
+                >
+                  <span>Katalog</span>
+                  <ChevronDown
                     className={cn(
-                      "group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs xl:text-sm font-semibold transition-all duration-300 ease-out cursor-pointer",
-                      isActive
-                        ? "bg-brand-gradient font-bold text-white shadow-md shadow-royal-600/25 scale-[1.02]"
-                        : "text-slate-600 hover:bg-royal-50/80 hover:text-royal-700 hover:scale-[1.03]",
+                      "size-3.5 shrink-0 transition-transform duration-200",
+                      catalogOpen && "rotate-180",
                     )}
+                    aria-hidden="true"
+                  />
+                </button>
+
+                {catalogOpen && (
+                  <div
+                    role="menu"
+                    aria-label="Submenu Katalog"
+                    className="absolute top-full left-0 z-50 mt-2 w-72 rounded-2xl border border-slate-200/90 bg-white/98 p-2 shadow-2xl shadow-slate-900/15 backdrop-blur-xl"
                   >
-                    <Icon
-                      className={cn(
-                        "size-3.5 transition-transform duration-300 group-hover:scale-110",
-                        isActive ? "text-white" : "text-slate-400 group-hover:text-royal-600",
-                      )}
-                      aria-hidden="true"
-                    />
-                    <span>{item.label}</span>
-                  </Link>
-                );
-              })}
+                    {CATALOG_DROPDOWN_ITEMS.map((item) => {
+                      const Icon = item.icon;
+                      const isSubActive =
+                        pathname === "/" && activeSection === item.href;
+                      return (
+                        <Link
+                          key={item.href}
+                          role="menuitem"
+                          href={pathname === "/" ? item.href : `/${item.href}`}
+                          onClick={(event) => handleNavClick(event, item.href)}
+                          className={cn(
+                            "flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors",
+                            isSubActive
+                              ? "bg-royal-50 text-royal-800"
+                              : "text-slate-700 hover:bg-slate-50 hover:text-royal-700",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg",
+                              isSubActive
+                                ? "bg-royal-700 text-white"
+                                : "bg-royal-50 text-royal-700",
+                            )}
+                          >
+                            <Icon className="size-4 shrink-0" aria-hidden="true" />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-xs font-extrabold whitespace-nowrap">
+                              {item.label}
+                            </span>
+                            <span className="mt-0.5 block text-[11px] font-medium text-slate-500">
+                              {item.desc}
+                            </span>
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href="/service"
+                onClick={(event) => handleNavClick(event, "/service")}
+                aria-current={pathname === "/service" ? "page" : undefined}
+                className={desktopLinkClass(pathname === "/service")}
+              >
+                Service HP
+              </Link>
+
+              <Link
+                href={pathname === "/" ? "#tukar-tambah" : "/#tukar-tambah"}
+                onClick={(event) => handleNavClick(event, "#tukar-tambah")}
+                aria-current={
+                  pathname === "/" && activeSection === "#tukar-tambah"
+                    ? "location"
+                    : undefined
+                }
+                className={desktopLinkClass(
+                  pathname === "/" && activeSection === "#tukar-tambah",
+                )}
+              >
+                Tukar Tambah
+              </Link>
+
+              <Link
+                href="/lacak"
+                onClick={(event) => handleNavClick(event, "/lacak")}
+                aria-current={pathname === "/lacak" ? "page" : undefined}
+                className={desktopLinkClass(pathname === "/lacak")}
+              >
+                Lacak
+              </Link>
             </nav>
 
-            {/* Desktop Actions */}
-            <div className="hidden items-center gap-2 lg:flex shrink-0">
+            {/* Desktop Actions: Ikon Keranjang Kompak + Chat Admin */}
+            <div className="hidden items-center gap-2.5 lg:flex shrink-0">
               <button
                 type="button"
                 onClick={openDrawer}
-                aria-label={`Buka keranjang belanja${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
-                className="relative inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-bold text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
+                aria-label={`Buka Keranjang${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
+                title="Buka Keranjang Belanja"
+                className="relative inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
               >
-                <ShoppingCart className="size-4" aria-hidden="true" />
-                <span>Keranjang</span>
+                <ShoppingCart className="size-4.5 shrink-0" aria-hidden="true" />
                 {totalQuantity > 0 && (
-                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-royal-700 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums">
+                  <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-black leading-none text-white tabular-nums shadow-sm ring-2 ring-white">
                     {totalQuantity}
                   </span>
                 )}
               </button>
-              <WhatsAppLink href={buildGeneralInquiryUrl()} size="md">
+              <WhatsAppLink
+                href={buildGeneralInquiryUrl()}
+                size="md"
+                className="whitespace-nowrap shrink-0"
+              >
                 Chat Admin
               </WhatsAppLink>
             </div>
 
             {/* Mobile Controls: Keranjang, Mode Jelas, Chat WA & Hamburger Menu */}
-            <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden shrink-0">
               <button
                 type="button"
                 onClick={openDrawer}
-                aria-label={`Buka keranjang belanja${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
-                className="relative inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
+                aria-label={`Buka Keranjang${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
+                className="relative inline-flex size-9.5 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
               >
-                <ShoppingCart className="size-4" aria-hidden="true" />
+                <ShoppingCart className="size-4 shrink-0" aria-hidden="true" />
                 {totalQuantity > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-4.5 items-center justify-center rounded-full bg-royal-700 px-1 py-0.5 text-[10px] font-extrabold leading-none text-white tabular-nums shadow-sm">
+                  <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-4.5 items-center justify-center rounded-full bg-rose-600 px-1 py-0.5 text-[10px] font-black leading-none text-white tabular-nums shadow-sm ring-2 ring-white">
                     {totalQuantity}
                   </span>
                 )}
@@ -348,13 +545,13 @@ export function Navbar() {
                 onClick={toggleElderMode}
                 aria-pressed={isElderMode}
                 className={cn(
-                  "inline-flex h-9 items-center gap-1 rounded-xl px-2.5 text-xs font-bold transition-all cursor-pointer",
+                  "inline-flex h-9.5 shrink-0 items-center gap-1 rounded-xl px-2.5 text-xs font-bold whitespace-nowrap transition-all cursor-pointer",
                   isElderMode
                     ? "bg-amber-400 text-slate-950 font-black"
                     : "border border-slate-200 bg-white text-slate-700",
                 )}
               >
-                <Type className="size-3.5" aria-hidden="true" />
+                <Type className="size-3.5 shrink-0" aria-hidden="true" />
                 <span>{isElderMode ? "Aa Aktif" : "Aa"}</span>
               </button>
 
@@ -363,9 +560,9 @@ export function Navbar() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Chat Admin via WhatsApp"
-                className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-wa-gradient px-3 text-xs font-bold text-white shadow-sm transition-all duration-300 hover:shadow-md hover:shadow-emerald-500/25 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-whatsapp-dark"
+                className="inline-flex h-9.5 shrink-0 items-center gap-1.5 rounded-xl bg-wa-gradient px-3 text-xs font-bold whitespace-nowrap text-white shadow-sm transition-all duration-300 hover:shadow-md hover:shadow-emerald-500/25 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-whatsapp-dark"
               >
-                <MessageCircle className="size-4" aria-hidden="true" />
+                <MessageCircle className="size-4 shrink-0" aria-hidden="true" />
                 <span>Chat WA</span>
               </a>
 
@@ -375,18 +572,24 @@ export function Navbar() {
                 aria-expanded={isOpen}
                 aria-controls="mobile-menu"
                 aria-label={isOpen ? "Tutup menu" : "Buka menu navigasi"}
-                className="inline-flex size-9.5 items-center justify-center rounded-xl border border-slate-200/90 bg-white/90 text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600 cursor-pointer"
+                className="inline-flex size-9.5 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-white/90 text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-slate-900 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600 cursor-pointer"
               >
                 {isOpen ? (
-                  <X className="size-5 transition-transform duration-200 rotate-90" aria-hidden="true" />
+                  <X
+                    className="size-5 transition-transform duration-200 rotate-90 shrink-0"
+                    aria-hidden="true"
+                  />
                 ) : (
-                  <Menu className="size-5 transition-transform duration-200" aria-hidden="true" />
+                  <Menu
+                    className="size-5 transition-transform duration-200 shrink-0"
+                    aria-hidden="true"
+                  />
                 )}
               </button>
             </div>
           </div>
 
-          {/* Panel Menu Mobile Slide-Down */}
+          {/* Panel Menu Mobile Slide-Down (tetap pakai ikon di semua item) */}
           <div
             id="mobile-menu"
             className={cn(
@@ -407,11 +610,15 @@ export function Navbar() {
                   return (
                     <Link
                       key={item.href}
-                      href={item.href.startsWith("#") && pathname !== "/" ? `/${item.href}` : item.href}
+                      href={
+                        item.href.startsWith("#") && pathname !== "/"
+                          ? `/${item.href}`
+                          : item.href
+                      }
                       onClick={(event) => handleNavClick(event, item.href)}
                       aria-current={isActive ? "location" : undefined}
                       className={cn(
-                        "flex items-center justify-between rounded-xl px-4 py-3 text-base font-bold transition-all duration-200 active:scale-[0.98]",
+                        "flex items-center justify-between rounded-xl px-4 py-3 text-base font-bold whitespace-nowrap transition-all duration-200 active:scale-[0.98]",
                         isActive
                           ? "bg-brand-gradient text-white shadow-sm"
                           : "text-slate-700 hover:bg-royal-50 hover:text-royal-700",
@@ -420,7 +627,7 @@ export function Navbar() {
                       <div className="flex items-center gap-3">
                         <Icon
                           className={cn(
-                            "size-4.5",
+                            "size-4.5 shrink-0",
                             isActive ? "text-white" : "text-royal-600",
                           )}
                           aria-hidden="true"
@@ -434,7 +641,10 @@ export function Navbar() {
                           </span>
                         )}
                         {isActive && (
-                          <span className="size-2 rounded-full bg-white animate-pulse" aria-hidden="true" />
+                          <span
+                            className="size-2 rounded-full bg-white animate-pulse"
+                            aria-hidden="true"
+                          />
                         )}
                       </div>
                     </Link>
@@ -446,7 +656,7 @@ export function Navbar() {
               <div className="mt-3.5 rounded-2xl border border-slate-200/90 bg-slate-50/90 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex size-8 items-center justify-center rounded-xl bg-royal-100 text-royal-700 font-extrabold text-sm">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-royal-100 text-royal-700 font-extrabold text-sm">
                       Aa
                     </span>
                     <div>
@@ -462,7 +672,7 @@ export function Navbar() {
                     type="button"
                     onClick={toggleElderMode}
                     className={cn(
-                      "rounded-xl px-3 py-1.5 text-xs font-black transition-all cursor-pointer",
+                      "rounded-xl px-3 py-1.5 text-xs font-black whitespace-nowrap transition-all cursor-pointer",
                       isElderMode
                         ? "bg-amber-400 text-slate-950"
                         : "bg-white border border-slate-200 text-slate-700",

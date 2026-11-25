@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { PostgrestError } from "@supabase/supabase-js";
 
 import type {
+  CustomSpecItem,
   PhoneSpecs,
   Product,
   ProductCategory,
@@ -109,6 +110,22 @@ function readStringArray(value: unknown): string[] {
   );
 }
 
+function readCustomSpecs(value: unknown): CustomSpecItem[] {
+  const parsed = parseJson(value);
+  if (!Array.isArray(parsed)) return [];
+
+  const result: CustomSpecItem[] = [];
+  for (const item of parsed) {
+    if (!isRecord(item)) continue;
+    const key = typeof item.key === "string" ? item.key.trim() : "";
+    const val = typeof item.value === "string" ? item.value.trim() : "";
+    if (!key || !val) continue;
+    result.push({ key, value: val });
+    if (result.length >= 15) break;
+  }
+  return result;
+}
+
 function readSpecs(value: unknown): PhoneSpecs | null {
   const parsed = parseJson(value);
   if (!isRecord(parsed)) return null;
@@ -128,9 +145,21 @@ function readSpecs(value: unknown): PhoneSpecs | null {
   if (typeof parsed.camera === "string" && parsed.camera !== "") {
     specs.camera = parsed.camera;
   }
+  if (typeof parsed.frontCamera === "string" && parsed.frontCamera !== "") {
+    specs.frontCamera = parsed.frontCamera;
+  }
+  if (typeof parsed.network === "string" && parsed.network !== "") {
+    specs.network = parsed.network;
+  }
+  if (typeof parsed.os === "string" && parsed.os !== "") {
+    specs.os = parsed.os;
+  }
 
   const battery = toNumber(parsed.battery);
   if (battery > 0) specs.battery = battery;
+
+  const customSpecs = readCustomSpecs(parsed.customSpecs);
+  if (customSpecs.length > 0) specs.customSpecs = customSpecs;
 
   return specs;
 }
@@ -369,6 +398,24 @@ export async function getProductById(id: string): Promise<Product | null> {
   throwIfError(error, "memuat produk");
 
   return data ? mapProductRow(data as ProductRow) : null;
+}
+
+export async function getProductBySlug(
+  slugOrId: string,
+): Promise<Product | null> {
+  const normalized = slugOrId.trim();
+  if (!normalized) return null;
+
+  const { data: bySlug, error: slugError } = await getSupabaseAdmin()
+    .from(TABLE)
+    .select("*")
+    .eq("slug", normalized)
+    .maybeSingle();
+
+  throwIfError(slugError, "memuat produk berdasarkan slug");
+  if (bySlug) return mapProductRow(bySlug as ProductRow);
+
+  return getProductById(normalized);
 }
 
 export async function createProductRecord(

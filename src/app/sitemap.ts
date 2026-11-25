@@ -38,7 +38,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     return {
-      url: `${baseUrl}/?product=${encodeURIComponent(product.slug || product.id)}`,
+      url: `${baseUrl}/produk/${encodeURIComponent(product.slug || product.id)}`,
       lastModified: lastMod,
       changeFrequency: "daily",
       priority: product.featured ? 0.9 : 0.8,
@@ -57,6 +57,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/lacak`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
     },
     ...productEntries,
   ];

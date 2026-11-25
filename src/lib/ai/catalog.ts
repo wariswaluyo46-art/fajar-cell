@@ -56,7 +56,7 @@ export async function getCatalogSnapshot(): Promise<CatalogSnapshot> {
 
 function describeProduct(product: Product): string {
   const fields = [
-    `[${PRODUCT_CATEGORY_LABELS[product.category]}] ${product.name}`,
+    `[ID:${product.id}] [${PRODUCT_CATEGORY_LABELS[product.category]}] ${product.name}`,
     product.brand,
     formatRupiah(product.price),
     product.status === "ready" ? "Ready Stock" : "Sold Out",
@@ -78,7 +78,19 @@ function describeProduct(product: Product): string {
     if (product.specs.chipset) specs.push(product.specs.chipset);
     if (product.specs.screen) specs.push(`layar ${product.specs.screen}`);
     if (product.specs.camera) specs.push(`kamera ${product.specs.camera}`);
+    if (product.specs.frontCamera) {
+      specs.push(`kamera depan ${product.specs.frontCamera}`);
+    }
     if (product.specs.battery) specs.push(`baterai ${product.specs.battery} mAh`);
+    if (product.specs.network) specs.push(product.specs.network);
+    if (product.specs.os) specs.push(product.specs.os);
+    if (product.specs.customSpecs && product.specs.customSpecs.length > 0) {
+      specs.push(
+        product.specs.customSpecs
+          .map((item) => `${item.key}: ${item.value}`)
+          .join(", "),
+      );
+    }
     fields.push(specs.join(" / "));
     fields.push(`warna ${product.color}`);
 

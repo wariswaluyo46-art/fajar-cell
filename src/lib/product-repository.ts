@@ -1,4 +1,5 @@
 import type {
+  CustomSpecItem,
   PhoneSpecs,
   Product,
   ProductInput,
@@ -78,6 +79,20 @@ function isValidDateString(value: unknown): value is string {
   return typeof value === "string" && !Number.isNaN(Date.parse(value));
 }
 
+function parseCustomSpecs(value: unknown): CustomSpecItem[] {
+  if (!Array.isArray(value)) return [];
+  const result: CustomSpecItem[] = [];
+  for (const item of value) {
+    if (!isRecord(item)) continue;
+    const key = typeof item.key === "string" ? item.key.trim() : "";
+    const val = typeof item.value === "string" ? item.value.trim() : "";
+    if (!key || !val) continue;
+    result.push({ key, value: val });
+    if (result.length >= 15) break;
+  }
+  return result;
+}
+
 function parseSpecs(value: unknown): PhoneSpecs | null {
   if (
     !isRecord(value) ||
@@ -98,8 +113,21 @@ function parseSpecs(value: unknown): PhoneSpecs | null {
   if (typeof value.camera === "string" && value.camera !== "") {
     specs.camera = value.camera;
   }
+  if (typeof value.frontCamera === "string" && value.frontCamera !== "") {
+    specs.frontCamera = value.frontCamera;
+  }
+  if (typeof value.network === "string" && value.network !== "") {
+    specs.network = value.network;
+  }
+  if (typeof value.os === "string" && value.os !== "") {
+    specs.os = value.os;
+  }
   if (isFiniteNumber(value.battery) && value.battery > 0) {
     specs.battery = value.battery;
+  }
+  const customSpecs = parseCustomSpecs(value.customSpecs);
+  if (customSpecs.length > 0) {
+    specs.customSpecs = customSpecs;
   }
 
   return specs;

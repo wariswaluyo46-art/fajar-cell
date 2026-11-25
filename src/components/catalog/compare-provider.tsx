@@ -1,6 +1,6 @@
 "use client";
 
-import { Scale, ShoppingCart, Trash2, X } from "lucide-react";
+import { LoaderCircle, Scale, ShoppingCart, Sparkles, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import {
   createContext,
@@ -21,7 +21,12 @@ import { getProductAvailabilityInfo } from "@/lib/order-constants";
 import { requiresNativeImage } from "@/lib/product-images";
 import { cn, formatRupiah } from "@/lib/utils";
 import { buildProductInquiryUrl } from "@/lib/whatsapp";
-import type { NewPhoneProduct, Product, UsedPhoneProduct } from "@/types";
+import type {
+  AiCompareVerdict,
+  NewPhoneProduct,
+  Product,
+  UsedPhoneProduct,
+} from "@/types";
 
 type PhoneProduct = UsedPhoneProduct | NewPhoneProduct;
 
@@ -48,6 +53,9 @@ export function CompareProvider({ children }: { children: ReactNode }) {
 
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aiVerdict, setAiVerdict] = useState<AiCompareVerdict | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const selectedPhones = useMemo(
     () =>
@@ -66,6 +74,8 @@ export function CompareProvider({ children }: { children: ReactNode }) {
     (product: Product) => {
       if (!isPhoneProduct(product)) return;
 
+      setAiVerdict(null);
+      setAiError(null);
       setCompareIds((prev) => {
         if (prev.includes(product.id)) {
           return prev.filter((id) => id !== product.id);
@@ -97,7 +107,44 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   const clearCompare = useCallback(() => {
     setCompareIds([]);
     setIsModalOpen(false);
+    setAiVerdict(null);
+    setAiError(null);
   }, []);
+
+  const requestAiVerdict = useCallback(async () => {
+    if (aiLoading || selectedPhones.length !== 2) return;
+    setAiLoading(true);
+    setAiError(null);
+
+    try {
+      const res = await fetch("/api/ai/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productIds: [selectedPhones[0].id, selectedPhones[1].id],
+        }),
+      });
+
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        verdict?: AiCompareVerdict;
+      } | null;
+
+      if (!res.ok || !data?.success || !data.verdict) {
+        setAiError(
+          data?.error ?? "Gagal meminta analisis AI. Coba lagi sebentar.",
+        );
+        return;
+      }
+
+      setAiVerdict(data.verdict);
+    } catch {
+      setAiError("Tidak dapat menghubungi layanan AI.");
+    } finally {
+      setAiLoading(false);
+    }
+  }, [aiLoading, selectedPhones]);
 
   const value = useMemo(
     () => ({ compareIds, isSelected, toggleCompare, clearCompare }),
@@ -181,7 +228,28 @@ export function CompareProvider({ children }: { children: ReactNode }) {
           size="xl"
           onClose={() => setIsModalOpen(false)}
           footer={
-            <div className="flex justify-end">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void requestAiVerdict();
+                }}
+                disabled={aiLoading}
+                className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-brand-gradient px-4 py-2 text-xs font-extrabold text-white shadow-sm transition hover:opacity-95 disabled:opacity-60 cursor-pointer"
+              >
+                {aiLoading ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Sparkles className="size-4 text-cyan-200" aria-hidden="true" />
+                )}
+                <span>
+                  {aiLoading
+                    ? "Menganalisis Perbandingan..."
+                    : aiVerdict
+                      ? "Analisis Ulang dengan AI"
+                      : "✨ Minta Analisis AI"}
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
@@ -192,6 +260,55 @@ export function CompareProvider({ children }: { children: ReactNode }) {
             </div>
           }
         >
+          {aiError && (
+            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-semibold text-rose-700">
+              {aiError}
+            </div>
+          )}
+
+          {aiVerdict && (
+            <div className="mb-5 rounded-2xl border border-royal-200 bg-royal-50/70 p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-royal-700" aria-hidden="true" />
+                <h3 className="text-xs font-extrabold tracking-wider text-royal-800 uppercase">
+                  Verdict Analisis Fajar AI
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed font-medium text-slate-800">
+                {aiVerdict.summary}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+                {(
+                  [
+                    { key: "gaming", label: "Performa / Gaming" },
+                    { key: "battery", label: "Baterai" },
+                    { key: "camera", label: "Kamera" },
+                    { key: "parents", label: "Ramah Orang Tua" },
+                    { key: "value", label: "Value for Money" },
+                  ] as const
+                ).map((cat) => {
+                  const winner = aiVerdict.winnerByCategory[cat.key];
+                  return (
+                    <div
+                      key={cat.key}
+                      className="rounded-xl border border-royal-200/80 bg-white p-2.5 text-[11px]"
+                    >
+                      <p className="font-bold text-slate-500 uppercase text-[10px]">
+                        {cat.label}
+                      </p>
+                      <p className="mt-0.5 font-extrabold text-royal-700 line-clamp-1">
+                        {winner.winnerName}
+                      </p>
+                      <p className="mt-0.5 text-slate-600 leading-snug">
+                        {winner.reason}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full min-w-[540px] border-collapse text-left text-xs sm:text-sm">
               <thead>
@@ -320,9 +437,46 @@ export function CompareProvider({ children }: { children: ReactNode }) {
                   {[firstPhone, secondPhone].map((phone) => (
                     <td key={phone.id} className="px-3 py-3 text-slate-700">
                       {phone.specs.camera ?? "-"}
+                      {phone.specs.frontCamera && (
+                        <span className="block text-[11px] text-slate-500">
+                          Depan: {phone.specs.frontCamera}
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>
+
+                <tr>
+                  <td className="py-3 pr-3 font-bold text-slate-600">
+                    Jaringan & OS
+                  </td>
+                  {[firstPhone, secondPhone].map((phone) => (
+                    <td key={phone.id} className="px-3 py-3 text-slate-700">
+                      {[phone.specs.network, phone.specs.os]
+                        .filter(Boolean)
+                        .join(" • ") || "-"}
+                    </td>
+                  ))}
+                </tr>
+
+                {(firstPhone.specs.customSpecs?.length ||
+                  secondPhone.specs.customSpecs?.length) ? (
+                  <tr>
+                    <td className="py-3 pr-3 font-bold text-slate-600">
+                      Fitur Tambahan
+                    </td>
+                    {[firstPhone, secondPhone].map((phone) => (
+                      <td key={phone.id} className="px-3 py-3 text-slate-700">
+                        {phone.specs.customSpecs &&
+                        phone.specs.customSpecs.length > 0
+                          ? phone.specs.customSpecs
+                              .map((item) => `${item.key}: ${item.value}`)
+                              .join(" • ")
+                          : "-"}
+                      </td>
+                    ))}
+                  </tr>
+                ) : null}
 
                 <tr>
                   <td className="py-3 pr-3 font-bold text-slate-600">

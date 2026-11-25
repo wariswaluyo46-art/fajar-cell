@@ -8,6 +8,7 @@ import {
   LoaderCircle,
   MessageCircle,
   PackageSearch,
+  Sparkles,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -104,6 +105,12 @@ export function ServiceSection() {
   const [createdTicketCode, setCreatedTicketCode] = useState<string | null>(
     null,
   );
+  const [symptomText, setSymptomText] = useState("");
+  const [isDiagnosing, setIsDiagnosing] = useState(false);
+  const [diagnoseResult, setDiagnoseResult] = useState<{
+    reasoning: string;
+    firstAidTip: string;
+  } | null>(null);
 
   const toggleDamage = (id: ServiceDamageId) => {
     setSelectedDamages((prev) =>
@@ -223,6 +230,72 @@ export function ServiceSection() {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  async function handleAiDiagnose() {
+    const trimmed = symptomText.trim();
+    if (isDiagnosing || trimmed.length < 6) {
+      showToast({
+        variant: "error",
+        title: "Jelaskan gejala singkat",
+        description: "Ketik keluhan HP minimal 6 karakter agar AI bisa menganalisa.",
+      });
+      return;
+    }
+
+    setIsDiagnosing(true);
+    setDiagnoseResult(null);
+    try {
+      const res = await fetch("/api/ai/diagnose-service", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          symptom: trimmed,
+          brand: selectedBrand,
+          model: phoneModel.trim(),
+        }),
+      });
+
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+        damageIds?: ServiceDamageId[];
+        reasoning?: string;
+        firstAidTip?: string;
+      } | null;
+
+      if (!res.ok || !data?.success || !Array.isArray(data.damageIds)) {
+        showToast({
+          variant: "error",
+          title: "Analisa AI gagal",
+          description: data?.error ?? "Silakan pilih kartu kerusakan secara manual.",
+        });
+        return;
+      }
+
+      if (data.damageIds.length > 0) {
+        setSelectedDamages(data.damageIds);
+      }
+
+      setDiagnoseResult({
+        reasoning: data.reasoning ?? "",
+        firstAidTip: data.firstAidTip ?? "",
+      });
+
+      showToast({
+        variant: "success",
+        title: "Pra-diagnosa AI selesai",
+        description: "Kategori kerusakan yang sesuai sudah otomatis dipilih.",
+      });
+    } catch {
+      showToast({
+        variant: "error",
+        title: "Koneksi bermasalah",
+        description: "Gagal menghubungi layanan AI.",
+      });
+    } finally {
+      setIsDiagnosing(false);
+    }
+  }
+
   return (
     <section id="service-section" className="relative py-12 sm:py-18 overflow-hidden">
       {/* Background radial glow */}
@@ -333,6 +406,54 @@ export function ServiceSection() {
                 <span className="rounded-full bg-royal-50 px-3 py-1 text-xs font-extrabold text-royal-700 border border-royal-200/60">
                   {selectedDamages.length} kerusakan dipilih
                 </span>
+              </div>
+
+              {/* AI Pra-Diagnosa Servis (Opsional) */}
+              <div className="mt-4 rounded-2xl border border-royal-200/80 bg-royal-50/50 p-4 space-y-2.5">
+                <label
+                  htmlFor="ai-service-symptom"
+                  className="flex items-center gap-1.5 text-xs font-extrabold text-royal-900"
+                >
+                  <Sparkles className="size-4 text-royal-600" aria-hidden="true" />
+                  Bingung pilih kerusakan? Ceritakan gejala HP Anda ke AI
+                </label>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    id="ai-service-symptom"
+                    type="text"
+                    value={symptomText}
+                    onChange={(e) => setSymptomText(e.target.value)}
+                    placeholder="Contoh: HP jatuh layar gelap tapi masih bunyi notifikasi / kena hujan"
+                    maxLength={400}
+                    className="h-11 flex-1 rounded-xl border border-royal-200 bg-white px-3.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-royal-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleAiDiagnose();
+                    }}
+                    disabled={isDiagnosing || symptomText.trim().length < 6}
+                    className="inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-xl bg-brand-gradient px-4 text-xs font-extrabold text-white shadow-sm disabled:opacity-50 cursor-pointer"
+                  >
+                    {isDiagnosing ? (
+                      <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Sparkles className="size-4 text-cyan-200" aria-hidden="true" />
+                    )}
+                    <span>{isDiagnosing ? "Menganalisa..." : "Analisa Gejala (AI)"}</span>
+                  </button>
+                </div>
+
+                {diagnoseResult && (
+                  <div className="rounded-xl border border-emerald-200 bg-white p-3 text-xs space-y-1">
+                    <p className="font-semibold text-slate-800">
+                      <strong>Hasil Analisa:</strong> {diagnoseResult.reasoning}
+                    </p>
+                    <p className="text-emerald-800 font-semibold">
+                      <strong>Tips Aman Awal:</strong> {diagnoseResult.firstAidTip}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Grid 6 Kartu Visual Kerusakan */}

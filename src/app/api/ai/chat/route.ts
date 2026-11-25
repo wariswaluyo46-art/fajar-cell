@@ -1,10 +1,12 @@
-import { checkRateLimit, getClientKey } from "@/lib/ai/rate-limit";
-import { apiError, apiJson, readJsonBody } from "@/lib/api-response";
 import { getCatalogSnapshot } from "@/lib/ai/catalog";
-import { generateText } from "@/lib/ai/gemini";
+import { generateText, parseStrictJson } from "@/lib/ai/gemini";
 import { aiErrorResponse } from "@/lib/ai/http";
 import { buildChatSystemPrompt } from "@/lib/ai/prompts";
-import type { AiChatMessage } from "@/types";
+import { checkRateLimit, getClientKey } from "@/lib/ai/rate-limit";
+import { apiError, apiJson, readJsonBody } from "@/lib/api-response";
+import { getCartSessionId } from "@/lib/cart-session";
+import { getProductsAvailabilityMap } from "@/lib/orders-db";
+import type { AiChatMessage, AiRecommendedProduct, Product } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -96,6 +98,26 @@ function parseChatRequest(value: unknown): ParseResult {
   return { ok: true, messages };
 }
 
+function toRecommendedSummary(
+  product: Product,
+  availableStock?: number,
+  reservedByOthers?: number,
+): AiRecommendedProduct {
+  return {
+    id: product.id,
+    slug: product.slug,
+    name: product.name,
+    brand: product.brand,
+    category: product.category,
+    price: product.price,
+    thumbnail: product.thumbnail,
+    status: product.status,
+    stock: product.stock,
+    availableStock,
+    reservedByOthers,
+  };
+}
+
 export async function POST(request: Request): Promise<Response> {
   const limit = checkRateLimit(
     `ai-chat:${getClientKey(request)}`,
@@ -129,12 +151,71 @@ export async function POST(request: Request): Promise<Response> {
         text: message.content,
       })),
       temperature: 0.6,
-      maxOutputTokens: 600,
+      maxOutputTokens: 700,
+      responseMimeType: "application/json",
     });
+
+    const parsedJson = parseStrictJson<{
+      reply?: unknown;
+      recommendedProductIds?: unknown;
+    }>(result.text);
+
+    const reply =
+      parsedJson &&
+      typeof parsedJson.reply === "string" &&
+      parsedJson.reply.trim() !== ""
+        ? parsedJson.reply.trim()
+        : result.text.trim();
+
+    const byId = new Map(products.map((p) => [p.id, p]));
+    const matchedProducts: Product[] = [];
+    const seen = new Set<string>();
+
+    if (parsedJson && Array.isArray(parsedJson.recommendedProductIds)) {
+      for (const rawId of parsedJson.recommendedProductIds) {
+        if (typeof rawId !== "string") continue;
+        const found = byId.get(rawId.trim());
+        if (found && !seen.has(found.id)) {
+          seen.add(found.id);
+          matchedProducts.push(found);
+          if (matchedProducts.length >= 3) break;
+        }
+      }
+    }
+
+    // Fallback heuristik bila model menyebut nama produk di teks tanpa ID JSON
+    if (matchedProducts.length === 0) {
+      const loweredReply = reply.toLowerCase();
+      for (const product of products) {
+        if (loweredReply.includes(product.name.toLowerCase())) {
+          matchedProducts.push(product);
+          if (matchedProducts.length >= 3) break;
+        }
+      }
+    }
+
+    let recommendedProducts: AiRecommendedProduct[] = [];
+    if (matchedProducts.length > 0) {
+      const sessionId = await getCartSessionId();
+      const availabilityMap = await getProductsAvailabilityMap(
+        sessionId ?? undefined,
+        matchedProducts,
+      );
+
+      recommendedProducts = matchedProducts.map((product) => {
+        const info = availabilityMap.get(product.id);
+        return toRecommendedSummary(
+          product,
+          info?.availableStock,
+          info ? info.reservedByOthers + info.pendingOrderQty : undefined,
+        );
+      });
+    }
 
     return apiJson({
       success: true,
-      reply: result.text,
+      reply,
+      recommendedProducts,
       model: result.model,
     });
   } catch (error) {

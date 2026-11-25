@@ -49,6 +49,7 @@ export interface GenerateTextInput {
   messages: GeminiMessage[];
   temperature?: number;
   maxOutputTokens?: number;
+  responseMimeType?: "application/json";
 }
 
 export interface GenerateTextResult {
@@ -229,6 +230,9 @@ async function requestModel(
             temperature: input.temperature ?? 0.6,
             maxOutputTokens: input.maxOutputTokens ?? 512,
             topP: 0.9,
+            ...(input.responseMimeType
+              ? { responseMimeType: input.responseMimeType }
+              : {}),
           },
         }),
         cache: "no-store",
@@ -373,4 +377,30 @@ export async function generateText(
       "Semua model Gemini gagal merespons.",
     )
   );
+}
+
+/** Parse JSON ketat dari output Gemini (membersihkan code fence bila ada). */
+export function parseStrictJson<T>(raw: string): T | null {
+  const cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  if (!cleaned) return null;
+
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch {
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1)) as T;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
 }
