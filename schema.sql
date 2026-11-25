@@ -677,3 +677,939 @@ on conflict (id) do nothing;
 
 -- Verifikasi cepat setelah impor:
 -- select category, count(*) as total from public.products group by category;
+
+-- =============================================================================
+-- FASE 1 OMS & E-COMMERCE: RESERVASI STOK ATOMIK, ORDER & TIKET SERVIS
+-- =============================================================================
+
+create extension if not exists pgcrypto;
+
+-- 1. Tabel cart_reservations (hold stok sementara 15 menit anti-overselling)
+create table if not exists public.cart_reservations (
+  id uuid primary key default gen_random_uuid(),
+  session_id text not null check (char_length(session_id) between 8 and 128),
+  product_id text not null references public.products(id) on delete cascade,
+  quantity integer not null check (quantity > 0),
+  status text not null default 'held' check (status in ('held', 'converted', 'released', 'expired')),
+  expires_at timestamptz(3) not null,
+  created_at timestamptz(3) not null default now(),
+  updated_at timestamptz(3) not null default now()
+);
+
+create unique index if not exists idx_cart_reservations_active_session_product
+  on public.cart_reservations (session_id, product_id)
+  where status = 'held';
+
+create index if not exists idx_cart_reservations_product_status_expires
+  on public.cart_reservations (product_id, status, expires_at);
+
+create index if not exists idx_cart_reservations_session_status
+  on public.cart_reservations (session_id, status);
+
+alter table public.cart_reservations enable row level security;
+revoke all on table public.cart_reservations from anon, authenticated;
+
+-- 2. Tabel orders
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  order_code text not null unique,
+  session_id text,
+  customer_name varchar(120) not null,
+  customer_phone varchar(32) not null,
+  delivery_method text not null check (delivery_method in ('cod', 'pickup')),
+  payment_method text not null check (payment_method in ('qris', 'dana', 'cod')),
+  payment_unique_code integer not null default 0 check (payment_unique_code >= 0 and payment_unique_code <= 999),
+  payment_proof_url text,
+  destination_address text not null default '',
+  destination_lat double precision,
+  destination_lng double precision,
+  distance_km numeric(6,2) not null default 0 check (distance_km >= 0),
+  shipping_fee integer not null default 0 check (shipping_fee >= 0),
+  subtotal integer not null check (subtotal >= 0),
+  total_amount integer not null check (total_amount >= 0),
+  notes text not null default '',
+  status text not null default 'pending_approval' check (
+    status in (
+      'pending_approval',
+      'payment_review',
+      'approved',
+      'out_for_delivery',
+      'ready_for_pickup',
+      'completed',
+      'rejected',
+      'cancelled',
+      'expired'
+    )
+  ),
+  stock_deducted boolean not null default false,
+  admin_notes text not null default '',
+  approved_at timestamptz(3),
+  completed_at timestamptz(3),
+  created_at timestamptz(3) not null default now(),
+  updated_at timestamptz(3) not null default now()
+);
+
+create index if not exists idx_orders_status_created
+  on public.orders (status, created_at desc);
+
+create index if not exists idx_orders_customer_phone
+  on public.orders (customer_phone);
+
+create index if not exists idx_orders_created_at
+  on public.orders (created_at desc);
+
+alter table public.orders enable row level security;
+revoke all on table public.orders from anon, authenticated;
+
+-- 3. Tabel order_items
+create table if not exists public.order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  product_id text references public.products(id) on delete set null,
+  product_name varchar(160) not null,
+  product_image text not null default '',
+  unit_price integer not null check (unit_price >= 0),
+  quantity integer not null check (quantity > 0),
+  warranty_days integer not null default 0 check (warranty_days >= 0),
+  created_at timestamptz(3) not null default now()
+);
+
+create index if not exists idx_order_items_order_id
+  on public.order_items (order_id);
+
+create index if not exists idx_order_items_product_id
+  on public.order_items (product_id);
+
+alter table public.order_items enable row level security;
+revoke all on table public.order_items from anon, authenticated;
+
+-- 4. Tabel order_status_history
+create table if not exists public.order_status_history (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  from_status text,
+  to_status text not null,
+  changed_by text not null check (changed_by in ('customer', 'admin', 'system')),
+  note text not null default '',
+  created_at timestamptz(3) not null default now()
+);
+
+create index if not exists idx_order_status_history_order_created
+  on public.order_status_history (order_id, created_at asc);
+
+alter table public.order_status_history enable row level security;
+revoke all on table public.order_status_history from anon, authenticated;
+
+-- 5. Tabel service_tickets
+create table if not exists public.service_tickets (
+  id uuid primary key default gen_random_uuid(),
+  ticket_code text not null unique,
+  brand varchar(64) not null,
+  device_model varchar(120) not null,
+  issues jsonb not null default '[]'::jsonb,
+  customer_name varchar(120) not null,
+  customer_phone varchar(32) not null,
+  visit_type text not null default 'datang-langsung' check (visit_type in ('datang-langsung', 'tanya-stok-dulu')),
+  estimated_cost_min integer not null default 0 check (estimated_cost_min >= 0),
+  estimated_cost_max integer not null default 0 check (estimated_cost_max >= 0),
+  notes text not null default '',
+  admin_notes text not null default '',
+  status text not null default 'received' check (
+    status in (
+      'received',
+      'diagnosing',
+      'waiting_parts',
+      'repairing',
+      'ready_for_pickup',
+      'completed',
+      'cancelled'
+    )
+  ),
+  created_at timestamptz(3) not null default now(),
+  updated_at timestamptz(3) not null default now()
+);
+
+create index if not exists idx_service_tickets_status_created
+  on public.service_tickets (status, created_at desc);
+
+create index if not exists idx_service_tickets_phone
+  on public.service_tickets (customer_phone);
+
+alter table public.service_tickets enable row level security;
+revoke all on table public.service_tickets from anon, authenticated;
+
+-- =============================================================================
+-- RPC FUNCTIONS (ATOMIC & RACE-CONDITION SAFE)
+-- =============================================================================
+
+-- RPC 1: cleanup_expired_reservations()
+create or replace function public.cleanup_expired_reservations()
+returns integer
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_count integer := 0;
+begin
+  update public.cart_reservations
+  set
+    status = 'expired',
+    updated_at = now()
+  where status = 'held'
+    and expires_at <= now();
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+
+-- RPC 2: reserve_cart_item()
+create or replace function public.reserve_cart_item(
+  p_session_id text,
+  p_product_id text,
+  p_qty integer,
+  p_ttl_minutes integer default 15
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_session_id text := btrim(coalesce(p_session_id, ''));
+  v_product_id text := btrim(coalesce(p_product_id, ''));
+  v_ttl integer := greatest(1, least(coalesce(p_ttl_minutes, 15), 60));
+  v_product public.products%rowtype;
+  v_other_cart_held integer := 0;
+  v_pending_order_held integer := 0;
+  v_available integer := 0;
+  v_expires_at timestamptz(3);
+  v_reservation_id uuid;
+begin
+  perform public.cleanup_expired_reservations();
+
+  if char_length(v_session_id) < 8 or char_length(v_session_id) > 128 then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_SESSION',
+      'message', 'Sesi keranjang tidak valid.',
+      'product_id', v_product_id
+    );
+  end if;
+
+  if v_product_id = '' then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_PRODUCT',
+      'message', 'ID produk tidak valid.',
+      'product_id', v_product_id
+    );
+  end if;
+
+  if coalesce(p_qty, 0) <= 0 then
+    update public.cart_reservations
+    set
+      status = 'released',
+      updated_at = now()
+    where session_id = v_session_id
+      and product_id = v_product_id
+      and status = 'held';
+
+    return jsonb_build_object(
+      'ok', true,
+      'released', true,
+      'product_id', v_product_id
+    );
+  end if;
+
+  select *
+  into v_product
+  from public.products
+  where id = v_product_id
+  for update;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'NOT_FOUND',
+      'message', 'Produk tidak ditemukan.',
+      'product_id', v_product_id,
+      'available_stock', 0
+    );
+  end if;
+
+  if v_product.status <> 'ready' or v_product.stock <= 0 then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'OUT_OF_STOCK',
+      'message', 'Stok produk tidak tersedia.',
+      'product_id', v_product_id,
+      'available_stock', 0
+    );
+  end if;
+
+  select coalesce(sum(cr.quantity), 0)::integer
+  into v_other_cart_held
+  from public.cart_reservations cr
+  where cr.product_id = v_product_id
+    and cr.status = 'held'
+    and cr.expires_at > now()
+    and cr.session_id <> v_session_id;
+
+  select coalesce(sum(oi.quantity), 0)::integer
+  into v_pending_order_held
+  from public.order_items oi
+  join public.orders o on o.id = oi.order_id
+  where oi.product_id = v_product_id
+    and o.stock_deducted = false
+    and o.status in ('pending_approval', 'payment_review');
+
+  v_available := greatest(0, v_product.stock - v_other_cart_held - v_pending_order_held);
+
+  if p_qty > v_available then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INSUFFICIENT_STOCK',
+      'message', case
+        when v_available = 0 then 'Stok sedang dipesan pengunjung lain. Cek lagi beberapa menit lagi.'
+        else format('Stok tersedia tersisa %s unit.', v_available)
+      end,
+      'product_id', v_product_id,
+      'available_stock', v_available
+    );
+  end if;
+
+  v_expires_at := now() + make_interval(mins => v_ttl);
+
+  select cr.id
+  into v_reservation_id
+  from public.cart_reservations cr
+  where cr.session_id = v_session_id
+    and cr.product_id = v_product_id
+    and cr.status = 'held'
+  for update;
+
+  if found then
+    update public.cart_reservations
+    set
+      quantity = p_qty,
+      expires_at = v_expires_at,
+      updated_at = now()
+    where id = v_reservation_id;
+  else
+    insert into public.cart_reservations (
+      session_id,
+      product_id,
+      quantity,
+      status,
+      expires_at
+    ) values (
+      v_session_id,
+      v_product_id,
+      p_qty,
+      'held',
+      v_expires_at
+    )
+    returning id into v_reservation_id;
+  end if;
+
+  return jsonb_build_object(
+    'ok', true,
+    'reservation_id', v_reservation_id,
+    'product_id', v_product_id,
+    'quantity', p_qty,
+    'expires_at', v_expires_at,
+    'available_stock', v_available
+  );
+end;
+$$;
+
+-- RPC 3: create_order_from_cart()
+create or replace function public.create_order_from_cart(
+  p_session_id text,
+  p_customer_name text,
+  p_customer_phone text,
+  p_delivery_method text,
+  p_payment_method text,
+  p_payment_unique_code integer default 0,
+  p_payment_proof_url text default null,
+  p_destination_address text default '',
+  p_destination_lat double precision default null,
+  p_destination_lng double precision default null,
+  p_distance_km numeric default 0,
+  p_shipping_fee integer default 0,
+  p_notes text default ''
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_session_id text := btrim(coalesce(p_session_id, ''));
+  v_customer_name text := btrim(coalesce(p_customer_name, ''));
+  v_customer_phone text := btrim(coalesce(p_customer_phone, ''));
+  v_delivery_method text := btrim(coalesce(p_delivery_method, ''));
+  v_payment_method text := btrim(coalesce(p_payment_method, ''));
+  v_proof_url text := nullif(btrim(coalesce(p_payment_proof_url, '')), '');
+  v_address text := btrim(coalesce(p_destination_address, ''));
+  v_notes text := btrim(coalesce(p_notes, ''));
+  v_distance_km numeric(6,2) := greatest(0, coalesce(p_distance_km, 0));
+  v_shipping_fee integer := 0;
+  v_unique_code integer := 0;
+  v_subtotal integer := 0;
+  v_total_amount integer := 0;
+  v_initial_status text := 'pending_approval';
+  v_item_count integer := 0;
+  v_row record;
+  v_other_cart_held integer := 0;
+  v_pending_order_held integer := 0;
+  v_available integer := 0;
+  v_order_id uuid;
+  v_order_code text;
+  v_date_part text;
+  v_attempt integer := 0;
+begin
+  perform public.cleanup_expired_reservations();
+
+  if char_length(v_session_id) < 8 or char_length(v_session_id) > 128 then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_SESSION',
+      'message', 'Sesi keranjang tidak valid.'
+    );
+  end if;
+
+  if v_customer_name = '' or v_customer_phone = '' then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_CUSTOMER',
+      'message', 'Nama dan nomor WhatsApp pembeli wajib diisi.'
+    );
+  end if;
+
+  if v_delivery_method not in ('cod', 'pickup') then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_DELIVERY',
+      'message', 'Metode pengiriman tidak valid.'
+    );
+  end if;
+
+  if v_payment_method not in ('qris', 'dana', 'cod') then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_PAYMENT',
+      'message', 'Metode pembayaran tidak valid.'
+    );
+  end if;
+
+  if coalesce(p_shipping_fee, 0) < 0 or coalesce(p_distance_km, 0) < 0 then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_SHIPPING',
+      'message', 'Jarak dan ongkos kirim tidak valid.'
+    );
+  end if;
+
+  for v_row in
+    select
+      cr.id as reservation_id,
+      cr.product_id,
+      cr.quantity,
+      p.name as product_name,
+      p.price as unit_price,
+      p.stock as product_stock,
+      p.status as product_status,
+      p.image_url,
+      p.warranty
+    from public.cart_reservations cr
+    join public.products p on p.id = cr.product_id
+    where cr.session_id = v_session_id
+      and cr.status = 'held'
+      and cr.expires_at > now()
+    order by p.id asc
+    for update of p, cr
+  loop
+    v_item_count := v_item_count + 1;
+
+    if v_row.product_status <> 'ready' or v_row.product_stock <= 0 then
+      return jsonb_build_object(
+        'ok', false,
+        'code', 'OUT_OF_STOCK',
+        'product_id', v_row.product_id,
+        'message', format('Produk "%s" sudah tidak tersedia.', v_row.product_name)
+      );
+    end if;
+
+    select coalesce(sum(cr2.quantity), 0)::integer
+    into v_other_cart_held
+    from public.cart_reservations cr2
+    where cr2.product_id = v_row.product_id
+      and cr2.status = 'held'
+      and cr2.expires_at > now()
+      and cr2.session_id <> v_session_id;
+
+    select coalesce(sum(oi.quantity), 0)::integer
+    into v_pending_order_held
+    from public.order_items oi
+    join public.orders o on o.id = oi.order_id
+    where oi.product_id = v_row.product_id
+      and o.stock_deducted = false
+      and o.status in ('pending_approval', 'payment_review');
+
+    v_available := greatest(0, v_row.product_stock - v_other_cart_held - v_pending_order_held);
+
+    if v_row.quantity > v_available then
+      return jsonb_build_object(
+        'ok', false,
+        'code', 'INSUFFICIENT_STOCK',
+        'product_id', v_row.product_id,
+        'message', format('Stok "%s" tidak mencukupi (tersedia %s unit).', v_row.product_name, v_available)
+      );
+    end if;
+
+    v_subtotal := v_subtotal + (v_row.unit_price * v_row.quantity);
+  end loop;
+
+  if v_item_count = 0 then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'CART_EMPTY_OR_EXPIRED',
+      'message', 'Keranjang kosong atau masa reservasi 15 menit sudah habis.'
+    );
+  end if;
+
+  v_shipping_fee := case
+    when v_delivery_method = 'pickup' then 0
+    else greatest(0, coalesce(p_shipping_fee, 0))
+  end;
+
+  v_unique_code := case
+    when v_payment_method = 'cod' then 0
+    else greatest(0, least(999, coalesce(p_payment_unique_code, 0)))
+  end;
+
+  v_total_amount := v_subtotal + v_shipping_fee + v_unique_code;
+
+  v_initial_status := case
+    when v_payment_method in ('qris', 'dana') and v_proof_url is not null then 'payment_review'
+    else 'pending_approval'
+  end;
+
+  v_date_part := to_char(now() at time zone 'Asia/Jakarta', 'YYYYMMDD');
+
+  loop
+    v_attempt := v_attempt + 1;
+    v_order_code := format(
+      'FC-%s-%s',
+      v_date_part,
+      upper(substring(replace(gen_random_uuid()::text, '-', '') from 1 for 4))
+    );
+
+    exit when not exists (
+      select 1 from public.orders o where o.order_code = v_order_code
+    );
+
+    if v_attempt >= 10 then
+      raise exception 'Gagal membuat kode pesanan unik.';
+    end if;
+  end loop;
+
+  insert into public.orders (
+    order_code,
+    session_id,
+    customer_name,
+    customer_phone,
+    delivery_method,
+    payment_method,
+    payment_unique_code,
+    payment_proof_url,
+    destination_address,
+    destination_lat,
+    destination_lng,
+    distance_km,
+    shipping_fee,
+    subtotal,
+    total_amount,
+    notes,
+    status,
+    stock_deducted
+  ) values (
+    v_order_code,
+    v_session_id,
+    v_customer_name,
+    v_customer_phone,
+    v_delivery_method,
+    v_payment_method,
+    v_unique_code,
+    v_proof_url,
+    v_address,
+    p_destination_lat,
+    p_destination_lng,
+    v_distance_km,
+    v_shipping_fee,
+    v_subtotal,
+    v_total_amount,
+    v_notes,
+    v_initial_status,
+    false
+  )
+  returning id into v_order_id;
+
+  insert into public.order_items (
+    order_id,
+    product_id,
+    product_name,
+    product_image,
+    unit_price,
+    quantity,
+    warranty_days
+  )
+  select
+    v_order_id,
+    p.id,
+    p.name,
+    p.image_url,
+    p.price,
+    cr.quantity,
+    case
+      when p.warranty is not null
+        and coalesce(p.warranty->>'active', '') = 'true'
+        and coalesce(p.warranty->>'durationDays', '') ~ '^[0-9]+$'
+      then (p.warranty->>'durationDays')::integer
+      else 0
+    end
+  from public.cart_reservations cr
+  join public.products p on p.id = cr.product_id
+  where cr.session_id = v_session_id
+    and cr.status = 'held'
+    and cr.expires_at > now()
+  order by p.id asc;
+
+  insert into public.order_status_history (
+    order_id,
+    from_status,
+    to_status,
+    changed_by,
+    note
+  ) values (
+    v_order_id,
+    null,
+    v_initial_status,
+    'customer',
+    case
+      when v_initial_status = 'payment_review' then 'Pesanan dibuat dengan bukti pembayaran.'
+      else 'Pesanan dibuat dan menunggu konfirmasi admin.'
+    end
+  );
+
+  update public.cart_reservations
+  set
+    status = 'converted',
+    updated_at = now()
+  where session_id = v_session_id
+    and status = 'held';
+
+  return jsonb_build_object(
+    'ok', true,
+    'order_id', v_order_id,
+    'order_code', v_order_code,
+    'status', v_initial_status,
+    'subtotal', v_subtotal,
+    'shipping_fee', v_shipping_fee,
+    'payment_unique_code', v_unique_code,
+    'total_amount', v_total_amount
+  );
+end;
+$$;
+
+-- RPC 4: admin_transition_order()
+create or replace function public.admin_transition_order(
+  p_order_id uuid,
+  p_next_status text,
+  p_admin_note text default ''
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v_order public.orders%rowtype;
+  v_next_status text := btrim(coalesce(p_next_status, ''));
+  v_note text := btrim(coalesce(p_admin_note, ''));
+  v_transition_allowed boolean := false;
+  v_stock_deducted boolean;
+  v_item record;
+  v_product public.products%rowtype;
+begin
+  select *
+  into v_order
+  from public.orders
+  where id = p_order_id
+  for update;
+
+  if not found then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'NOT_FOUND',
+      'message', 'Pesanan tidak ditemukan.'
+    );
+  end if;
+
+  if v_order.status = v_next_status then
+    return jsonb_build_object(
+      'ok', true,
+      'unchanged', true,
+      'order_id', v_order.id,
+      'order_code', v_order.order_code,
+      'from_status', v_order.status,
+      'to_status', v_next_status,
+      'stock_deducted', v_order.stock_deducted
+    );
+  end if;
+
+  v_transition_allowed := case v_order.status
+    when 'pending_approval' then v_next_status in ('payment_review', 'approved', 'rejected', 'cancelled', 'expired')
+    when 'payment_review' then v_next_status in ('approved', 'rejected', 'cancelled', 'expired')
+    when 'approved' then v_next_status in ('out_for_delivery', 'ready_for_pickup', 'completed', 'cancelled')
+    when 'out_for_delivery' then v_next_status in ('completed', 'cancelled')
+    when 'ready_for_pickup' then v_next_status in ('completed', 'cancelled')
+    else false
+  end;
+
+  if not v_transition_allowed then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'INVALID_TRANSITION',
+      'message', format('Transisi status dari "%s" ke "%s" tidak diizinkan.', v_order.status, v_next_status)
+    );
+  end if;
+
+  if v_next_status in ('rejected', 'cancelled') and v_note = '' then
+    return jsonb_build_object(
+      'ok', false,
+      'code', 'NOTE_REQUIRED',
+      'message', 'Alasan penolakan atau pembatalan wajib diisi.'
+    );
+  end if;
+
+  v_stock_deducted := v_order.stock_deducted;
+
+  -- Konsumsi stok secara atomik (hanya sekali, idempoten lewat flag stock_deducted)
+  if v_next_status in ('approved', 'out_for_delivery', 'ready_for_pickup', 'completed')
+     and not v_stock_deducted then
+
+    for v_item in
+      select oi.product_id, sum(oi.quantity)::integer as qty
+      from public.order_items oi
+      where oi.order_id = v_order.id
+        and oi.product_id is not null
+      group by oi.product_id
+      order by oi.product_id asc
+    loop
+      select *
+      into v_product
+      from public.products
+      where id = v_item.product_id
+      for update;
+
+      if not found then
+        return jsonb_build_object(
+          'ok', false,
+          'code', 'PRODUCT_NOT_FOUND',
+          'message', 'Salah satu produk pada pesanan tidak lagi tersedia di katalog.'
+        );
+      end if;
+
+      if v_product.stock < v_item.qty then
+        return jsonb_build_object(
+          'ok', false,
+          'code', 'INSUFFICIENT_STOCK',
+          'message', format('Stok "%s" tidak mencukupi untuk disetujui (tersisa %s unit).', v_product.name, v_product.stock)
+        );
+      end if;
+    end loop;
+
+    for v_item in
+      select oi.product_id, sum(oi.quantity)::integer as qty
+      from public.order_items oi
+      where oi.order_id = v_order.id
+        and oi.product_id is not null
+      group by oi.product_id
+      order by oi.product_id asc
+    loop
+      update public.products
+      set
+        stock = stock - v_item.qty,
+        status = case when stock - v_item.qty <= 0 then 'sold-out' else status end,
+        updated_at = now()
+      where id = v_item.product_id;
+    end loop;
+
+    v_stock_deducted := true;
+  end if;
+
+  -- Pengembalian stok jika order yang sudah dipotong stoknya dibatalkan / ditolak / expired
+  if v_next_status in ('rejected', 'cancelled', 'expired')
+     and v_stock_deducted then
+
+    for v_item in
+      select oi.product_id, sum(oi.quantity)::integer as qty
+      from public.order_items oi
+      where oi.order_id = v_order.id
+        and oi.product_id is not null
+      group by oi.product_id
+      order by oi.product_id asc
+    loop
+      update public.products
+      set
+        stock = stock + v_item.qty,
+        status = case when status = 'sold-out' and stock + v_item.qty > 0 then 'ready' else status end,
+        updated_at = now()
+      where id = v_item.product_id;
+    end loop;
+
+    v_stock_deducted := false;
+  end if;
+
+  update public.orders
+  set
+    status = v_next_status,
+    stock_deducted = v_stock_deducted,
+    admin_notes = case when v_note <> '' then v_note else admin_notes end,
+    approved_at = case
+      when v_next_status = 'approved' and approved_at is null then now()
+      else approved_at
+    end,
+    completed_at = case
+      when v_next_status = 'completed' and completed_at is null then now()
+      else completed_at
+    end,
+    updated_at = now()
+  where id = v_order.id;
+
+  insert into public.order_status_history (
+    order_id,
+    from_status,
+    to_status,
+    changed_by,
+    note
+  ) values (
+    v_order.id,
+    v_order.status,
+    v_next_status,
+    'admin',
+    v_note
+  );
+
+  return jsonb_build_object(
+    'ok', true,
+    'order_id', v_order.id,
+    'order_code', v_order.order_code,
+    'from_status', v_order.status,
+    'to_status', v_next_status,
+    'stock_deducted', v_stock_deducted
+  );
+end;
+$$;
+
+-- RPC 5: get_products_availability()
+create or replace function public.get_products_availability(
+  p_session_id text default null
+)
+returns table (
+  product_id text,
+  total_stock integer,
+  reserved_by_others integer,
+  reserved_by_self integer,
+  pending_order_qty integer,
+  available_stock integer
+)
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  with active_carts as (
+    select
+      cr.product_id,
+      coalesce(sum(case when p_session_id is not null and cr.session_id = p_session_id then cr.quantity else 0 end), 0)::integer as reserved_by_self,
+      coalesce(sum(case when p_session_id is null or cr.session_id <> p_session_id then cr.quantity else 0 end), 0)::integer as reserved_by_others
+    from public.cart_reservations cr
+    where cr.status = 'held'
+      and cr.expires_at > now()
+    group by cr.product_id
+  ),
+  pending_orders as (
+    select
+      oi.product_id,
+      coalesce(sum(oi.quantity), 0)::integer as pending_order_qty
+    from public.order_items oi
+    join public.orders o on o.id = oi.order_id
+    where oi.product_id is not null
+      and o.stock_deducted = false
+      and o.status in ('pending_approval', 'payment_review')
+    group by oi.product_id
+  )
+  select
+    p.id as product_id,
+    p.stock as total_stock,
+    coalesce(ac.reserved_by_others, 0)::integer as reserved_by_others,
+    coalesce(ac.reserved_by_self, 0)::integer as reserved_by_self,
+    coalesce(po.pending_order_qty, 0)::integer as pending_order_qty,
+    case
+      when p.status <> 'ready' then 0
+      else greatest(0, p.stock - coalesce(ac.reserved_by_others, 0) - coalesce(po.pending_order_qty, 0))
+    end::integer as available_stock
+  from public.products p
+  left join active_carts ac on ac.product_id = p.id
+  left join pending_orders po on po.product_id = p.id;
+$$;
+
+-- Least-privilege: hanya service_role yang boleh memanggil RPC OMS
+revoke all on function public.cleanup_expired_reservations() from public, anon, authenticated;
+grant execute on function public.cleanup_expired_reservations() to service_role;
+
+revoke all on function public.reserve_cart_item(text, text, integer, integer) from public, anon, authenticated;
+grant execute on function public.reserve_cart_item(text, text, integer, integer) to service_role;
+
+revoke all on function public.create_order_from_cart(text, text, text, text, text, integer, text, text, double precision, double precision, numeric, integer, text) from public, anon, authenticated;
+grant execute on function public.create_order_from_cart(text, text, text, text, text, integer, text, text, double precision, double precision, numeric, integer, text) to service_role;
+
+revoke all on function public.admin_transition_order(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.admin_transition_order(uuid, text, text) to service_role;
+
+revoke all on function public.get_products_availability(text) from public, anon, authenticated;
+grant execute on function public.get_products_availability(text) to service_role;
+
+-- =============================================================================
+-- PENGATURAN PEMBAYARAN & KOORDINAT TOKO DINAMIS (EDITABLE DARI /admin)
+-- =============================================================================
+
+create table if not exists public.store_settings (
+  id text primary key default 'default' check (id = 'default'),
+  qris_image_url text not null default '/images/qris-konter-fajar-cell.svg',
+  dana_number varchar(24) not null default '085156069234',
+  dana_account_name varchar(120) not null default 'Konter Fajar Cell',
+  store_lat double precision not null default -7.3679 check (store_lat between -90 and 90),
+  store_lng double precision not null default 109.6836 check (store_lng between -180 and 180),
+  updated_at timestamptz(3) not null default now()
+);
+
+alter table public.store_settings enable row level security;
+revoke all on table public.store_settings from anon, authenticated;
+grant select on table public.store_settings to anon, authenticated;
+
+drop policy if exists "Public read store settings" on public.store_settings;
+create policy "Public read store settings"
+  on public.store_settings
+  for select
+  to anon, authenticated
+  using (id = 'default');
+
+insert into public.store_settings (id)
+values ('default')
+on conflict (id) do nothing;

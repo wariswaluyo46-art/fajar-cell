@@ -86,6 +86,10 @@ interface ProductBase {
   featured: boolean;
   /** Jumlah unit tersedia. Unit HP bekas umumnya 1. */
   stock: number;
+  /** Stok efektif tersisa setelah dikurangi hold sesi lain & order pending. */
+  availableStock?: number;
+  /** Jumlah unit yang sedang di-hold di keranjang pengunjung lain. */
+  reservedByOthers?: number;
   /** Tanggal ISO 8601. */
   createdAt: string;
   updatedAt: string;

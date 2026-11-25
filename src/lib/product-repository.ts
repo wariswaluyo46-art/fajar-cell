@@ -199,6 +199,14 @@ function parseProduct(value: unknown): Product | null {
     status: value.status,
     featured: value.featured,
     stock: value.stock,
+    availableStock:
+      isFiniteNumber(value.availableStock) && value.availableStock >= 0
+        ? value.availableStock
+        : undefined,
+    reservedByOthers:
+      isFiniteNumber(value.reservedByOthers) && value.reservedByOthers >= 0
+        ? value.reservedByOthers
+        : undefined,
     createdAt: value.createdAt,
     updatedAt: value.updatedAt,
   };
@@ -346,6 +354,11 @@ export function getServerProductsSnapshot(): Product[] {
 
 function broadcastProductsChange(): void {
   productChannel?.postMessage("products-updated");
+}
+
+export function notifyProductsChanged(): void {
+  broadcastProductsChange();
+  void refreshProducts();
 }
 
 function applyProduct(product: Product, mode: "upsert" | "prepend"): void {

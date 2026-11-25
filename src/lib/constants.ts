@@ -28,6 +28,7 @@ export const NAV_ITEMS = [
   { label: "HP Baru", href: "#hp-baru" },
   { label: "Aksesoris", href: "#aksesoris" },
   { label: "Service HP", href: "/service" },
+  { label: "Lacak", href: "/lacak" },
   { label: "Tukar Tambah", href: "#tukar-tambah" },
   { label: "Lokasi", href: "#lokasi" },
 ] as const;

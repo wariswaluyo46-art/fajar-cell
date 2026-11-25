@@ -1,9 +1,12 @@
 import { getAdminSession } from "@/lib/admin-auth";
 import { apiError, apiJson, readJsonBody } from "@/lib/api-response";
+import { getCartSessionId } from "@/lib/cart-session";
+import { getProductsAvailabilityMap } from "@/lib/orders-db";
 import { parseProductInput } from "@/lib/product-input";
 import { getAllProducts } from "@/lib/products";
 import { createProductRecord, listProducts } from "@/lib/products-db";
 import { checkRateLimit, getClientKey } from "@/lib/rate-limit";
+import type { Product, ProductAvailability } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,15 +15,50 @@ const MAX_BODY_BYTES = 256 * 1_024;
 const MUTATION_LIMIT = 60;
 const MUTATION_WINDOW_MS = 60_000;
 
+function attachAvailability(
+  products: Product[],
+  availabilityMap: Map<string, ProductAvailability>,
+): Product[] {
+  if (availabilityMap.size === 0) return products;
+
+  return products.map((product) => {
+    const info = availabilityMap.get(product.id);
+    if (!info) return product;
+
+    return {
+      ...product,
+      availableStock: info.availableStock,
+      reservedByOthers: info.reservedByOthers + info.pendingOrderQty,
+    };
+  });
+}
+
 export async function GET(): Promise<Response> {
+  const sessionId = await getCartSessionId();
+
   try {
     const products = await listProducts();
-    return apiJson({ success: true, products });
+    const availabilityMap = await getProductsAvailabilityMap(
+      sessionId ?? undefined,
+      products,
+    );
+    return apiJson({
+      success: true,
+      products: attachAvailability(products, availabilityMap),
+    });
   } catch (error) {
     console.warn("GET /api/products gagal memuat dari database, beralih ke data lokal:", error);
     try {
       const fallbackProducts = getAllProducts();
-      return apiJson({ success: true, products: fallbackProducts, isFallback: true });
+      const availabilityMap = await getProductsAvailabilityMap(
+        sessionId ?? undefined,
+        fallbackProducts,
+      );
+      return apiJson({
+        success: true,
+        products: attachAvailability(fallbackProducts, availabilityMap),
+        isFallback: true,
+      });
     } catch (fallbackError) {
       console.error("GET /api/products fallback lokal juga gagal:", fallbackError);
       return apiError("Daftar produk tidak dapat dimuat.", 500);

@@ -6,7 +6,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { WhatsAppLink } from "@/components/ui/whatsapp-link";
 import { SITE } from "@/lib/constants";
 import { defaultStoreSettings } from "@/lib/store";
-import { buildGeneralInquiryUrl } from "@/lib/whatsapp";
+import { buildCodInquiryUrl } from "@/lib/whatsapp";
 
 export function LocationSection() {
   const store = defaultStoreSettings;
@@ -116,7 +116,7 @@ export function LocationSection() {
                       ))}
                     </div>
                     <WhatsAppLink
-                      href={buildGeneralInquiryUrl()}
+                      href={buildCodInquiryUrl()}
                       size="sm"
                       variant="outline"
                       className="mt-4 w-fit"

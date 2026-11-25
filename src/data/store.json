@@ -21,5 +21,12 @@
     "Madukara",
     "Sekitarnya"
   ],
-  "instagram": "@konterfajarcell"
+  "instagram": "@konterfajarcell",
+  "coordinates": {
+    "lat": -7.3679,
+    "lng": 109.6836
+  },
+  "danaNumber": "085156069234",
+  "danaAccountName": "Konter Fajar Cell",
+  "qrisImageUrl": "/images/qris-konter-fajar-cell.svg"
 }

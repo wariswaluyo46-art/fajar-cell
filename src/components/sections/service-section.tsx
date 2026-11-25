@@ -5,10 +5,13 @@ import {
   CheckCircle2,
   Clock,
   HelpCircle,
+  LoaderCircle,
   MessageCircle,
+  PackageSearch,
   Wrench,
   Zap,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { Container } from "@/components/ui/container";
@@ -95,7 +98,12 @@ export function ServiceSection() {
   const [serviceMethod, setServiceMethod] =
     useState<ServiceMethod>("datang-langsung");
   const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+  const [createdTicketCode, setCreatedTicketCode] = useState<string | null>(
+    null,
+  );
 
   const toggleDamage = (id: ServiceDamageId) => {
     setSelectedDamages((prev) =>
@@ -136,17 +144,84 @@ export function ServiceSection() {
   );
 
   const waUrl = useMemo(
-    () => buildServiceInquiryUrl(bookingInput),
-    [bookingInput],
+    () => buildServiceInquiryUrl(bookingInput, createdTicketCode ?? undefined),
+    [bookingInput, createdTicketCode],
   );
 
-  const handleBookingClick = () => {
-    showToast({
-      variant: "info",
-      title: "Mengarahkan ke WhatsApp Servis...",
-      description: "Format booking servis otomatis sedang disiapkan ke WhatsApp Admin.",
-    });
-  };
+  const estimatedRange = useMemo(() => {
+    const DAMAGE_ESTIMATES: Record<ServiceDamageId, [number, number]> = {
+      lcd: [250_000, 850_000],
+      battery: [150_000, 450_000],
+      charging: [75_000, 250_000],
+      water: [150_000, 500_000],
+      audio: [85_000, 250_000],
+      software: [75_000, 200_000],
+    };
+    return selectedDamages.reduce(
+      (acc, id) => {
+        const [min, max] = DAMAGE_ESTIMATES[id] ?? [0, 0];
+        return { min: acc.min + min, max: acc.max + max };
+      },
+      { min: 0, max: 0 },
+    );
+  }, [selectedDamages]);
+
+  async function handleBookingSubmit() {
+    if (isSubmittingTicket) return;
+
+    const phoneDigits = customerPhone.replace(/\D/g, "");
+    let ticketCode: string | undefined;
+
+    if (phoneDigits.length >= 9 && phoneDigits.length <= 15) {
+      setIsSubmittingTicket(true);
+      try {
+        const res = await fetch("/api/service-tickets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            brand: selectedBrand,
+            deviceModel: phoneModel.trim() || "Semua Tipe",
+            issues: selectedDamageItems.map((d) => d.shortName),
+            customerName: customerName.trim() || "Pelanggan Servis",
+            customerPhone: customerPhone.trim(),
+            visitType: serviceMethod,
+            estimatedCostMin: estimatedRange.min,
+            estimatedCostMax: estimatedRange.max,
+            notes: notes.trim(),
+          }),
+        });
+        const data = (await res.json().catch(() => null)) as {
+          success?: boolean;
+          ticket?: { ticketCode?: string };
+        } | null;
+
+        if (res.ok && data?.success && data.ticket?.ticketCode) {
+          ticketCode = data.ticket.ticketCode;
+          setCreatedTicketCode(ticketCode);
+          showToast({
+            variant: "success",
+            title: `Tiket servis ${ticketCode} tersimpan`,
+            description:
+              "Tiket tercatat di sistem dan diteruskan ke WhatsApp teknisi.",
+          });
+        }
+      } catch {
+        // Tetap lanjutkan ke WhatsApp bila penyimpanan tiket gagal sementara
+      } finally {
+        setIsSubmittingTicket(false);
+      }
+    } else {
+      showToast({
+        variant: "info",
+        title: "Mengarahkan ke WhatsApp Servis...",
+        description:
+          "Isi nomor WA jika ingin mendapatkan kode tiket pelacakan SRV.",
+      });
+    }
+
+    const url = buildServiceInquiryUrl(bookingInput, ticketCode);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
 
   return (
     <section id="service-section" className="relative py-12 sm:py-18 overflow-hidden">
@@ -426,14 +501,14 @@ export function ServiceSection() {
                 </label>
               </div>
 
-              {/* Optional Name & Notes Inputs */}
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {/* Name, WhatsApp & Notes Inputs */}
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
                 <div>
                   <label
                     htmlFor="service-customer-name"
                     className="block text-xs font-semibold text-slate-700 mb-1"
                   >
-                    Nama Anda (Opsional):
+                    Nama Anda:
                   </label>
                   <input
                     id="service-customer-name"
@@ -441,6 +516,22 @@ export function ServiceSection() {
                     value={customerName}
                     onChange={(e) => setCustomerName(e.target.value)}
                     placeholder="Contoh: Pak Budi"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-royal-400 focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="service-customer-phone"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    Nomor WhatsApp (untuk Kode Tiket):
+                  </label>
+                  <input
+                    id="service-customer-phone"
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Contoh: 081234567890"
                     className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 text-xs sm:text-sm text-slate-900 outline-none focus:border-royal-400 focus:bg-white"
                   />
                 </div>
@@ -462,21 +553,69 @@ export function ServiceSection() {
                 </div>
               </div>
 
-              {/* Large High-Conversion WhatsApp CTA Button */}
-              <div className="mt-6">
-                <a
-                  href={waUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={handleBookingClick}
-                  className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-wa-gradient px-6 text-base sm:text-lg font-extrabold text-white shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:scale-[0.98] cursor-pointer"
+              {/* Large High-Conversion WhatsApp & Ticket CTA Button */}
+              <div className="mt-6 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleBookingSubmit();
+                  }}
+                  disabled={isSubmittingTicket}
+                  className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-wa-gradient px-6 text-base sm:text-lg font-extrabold text-white shadow-xl shadow-emerald-600/30 transition-all duration-300 hover:shadow-2xl hover:shadow-emerald-600/40 hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 cursor-pointer"
                 >
-                  <MessageCircle className="size-6 shrink-0 transition-transform duration-300 group-hover:scale-110" aria-hidden="true" />
-                  <span>Konsultasi & Booking Service via WhatsApp</span>
-                  <ArrowRight className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true" />
-                </a>
+                  {isSubmittingTicket ? (
+                    <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
+                  ) : (
+                    <MessageCircle
+                      className="size-6 shrink-0 transition-transform duration-300 group-hover:scale-110"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span>
+                    {isSubmittingTicket
+                      ? "Membuat Tiket & Membuka WA..."
+                      : "Konsultasi & Booking Service via WhatsApp"}
+                  </span>
+                  <ArrowRight
+                    className="size-5 shrink-0 transition-transform duration-300 group-hover:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </button>
 
-                <p className="mt-3 text-center text-xs text-slate-500">
+                {createdTicketCode && (
+                  <div className="flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-xs font-extrabold text-emerald-900">
+                        Tiket Servis Terdaftar:{" "}
+                        <span className="font-mono text-royal-700">
+                          {createdTicketCode}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 text-[11px] text-emerald-800">
+                        Simpan kode ini untuk melacak progres perbaikan teknisi kapan saja.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={`/lacak?code=${encodeURIComponent(createdTicketCode)}`}
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-xl bg-royal-700 px-3.5 py-1.5 text-xs font-extrabold text-white hover:bg-royal-800"
+                      >
+                        <PackageSearch className="size-3.5" aria-hidden="true" />
+                        Lacak Status
+                      </Link>
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3.5 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                      >
+                        Buka WA Ulang
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-center text-xs text-slate-500">
                   Respon cepat oleh teknisi resmi Konter Fajar Cell • Buka Setiap Hari 07.30 - 21.00 WIB
                 </p>
               </div>

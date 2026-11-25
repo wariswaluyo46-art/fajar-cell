@@ -1,6 +1,11 @@
+import "server-only";
+
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
+
+import { apiError } from "./api-response";
 
 export const ADMIN_SESSION_COOKIE = "kfc_admin_session";
 export const ADMIN_SESSION_MAX_AGE = 60 * 60 * 12;
@@ -155,4 +160,19 @@ export async function getAdminSession(): Promise<AdminSessionInfo | null> {
   return verifyAdminSessionToken(
     cookieStore.get(ADMIN_SESSION_COOKIE)?.value,
   );
+}
+
+export type AdminAuthGuardResult =
+  | { ok: true; session: AdminSessionInfo }
+  | { ok: false; response: NextResponse };
+
+export async function requireAdminSession(): Promise<AdminAuthGuardResult> {
+  const session = await getAdminSession();
+  if (!session) {
+    return {
+      ok: false,
+      response: apiError("Sesi admin berakhir. Silakan login ulang.", 401),
+    };
+  }
+  return { ok: true, session };
 }

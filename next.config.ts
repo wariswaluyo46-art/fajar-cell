@@ -26,7 +26,7 @@ const securityHeaders = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+    value: "camera=(), microphone=(), geolocation=(self), payment=(), usb=()",
   },
   {
     key: "Strict-Transport-Security",
@@ -39,6 +39,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  experimental: {
+    agentUpgrade: "security",
+  },
   images: {
     // Foto lokal dan Supabase Storage dioptimasi next/image. URL eksternal
     // lainnya dirender aman dengan fallback gambar natif.

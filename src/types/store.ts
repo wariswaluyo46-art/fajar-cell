@@ -29,4 +29,24 @@ export interface StoreSettings {
   /** Wilayah yang dijangkau layanan COD. */
   codAreas: string[];
   instagram?: string;
+  /** Koordinat lokasi toko untuk kalkulasi jarak COD & rute peta. */
+  coordinates?: {
+    lat: number;
+    lng: number;
+  };
+  /** Nomor akun DANA merchant untuk pembayaran transfer. */
+  danaNumber?: string;
+  /** Nama pemilik akun DANA merchant. */
+  danaAccountName?: string;
+  /** URL/path gambar QRIS merchant. */
+  qrisImageUrl?: string;
+}
+
+export interface StorePaymentSettings {
+  qrisImageUrl: string;
+  danaNumber: string;
+  danaAccountName: string;
+  storeLat: number;
+  storeLng: number;
+  updatedAt?: string;
 }

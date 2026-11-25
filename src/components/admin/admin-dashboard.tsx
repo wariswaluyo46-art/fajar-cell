@@ -2,8 +2,10 @@
 
 import {
   ArrowUpRight,
+  BarChart3,
   CheckCircle2,
   CircleDollarSign,
+  ClipboardList,
   ExternalLink,
   LoaderCircle,
   LogOut,
@@ -11,16 +13,22 @@ import {
   Plus,
   RotateCcw,
   Search,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   Store,
+  Wrench,
   XCircle,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { AdminAnalyticsTab } from "@/components/admin/admin-analytics-tab";
 import { AdminLogin } from "@/components/admin/admin-login";
+import { AdminOrdersTab } from "@/components/admin/admin-orders-tab";
+import { AdminServiceTicketsTab } from "@/components/admin/admin-service-tickets-tab";
+import { AdminSettingsTab } from "@/components/admin/admin-settings-tab";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { ProductTable } from "@/components/admin/product-table";
 
@@ -38,6 +46,7 @@ import {
   PRODUCT_CATEGORY_LABELS,
   PRODUCT_STATUS_LABELS,
 } from "@/lib/constants";
+import { ORDER_STATUS_LABELS } from "@/lib/order-constants";
 import {
   ProductApiError,
   createProduct,
@@ -47,13 +56,21 @@ import {
   toggleProductStatus,
   updateProduct,
 } from "@/lib/product-repository";
+import { defaultStoreSettings } from "@/lib/store";
 import { cn, formatDate, formatRupiah } from "@/lib/utils";
 import type {
+  Order,
+  OrderStatus,
   Product,
   ProductCategory,
   ProductInput,
   ProductStatus,
+  ServiceTicket,
+  ServiceTicketStatus,
+  StorePaymentSettings,
 } from "@/types";
+
+type AdminTab = "orders" | "products" | "service" | "analytics" | "settings";
 
 type FormState =
   | { mode: "create" }
@@ -136,6 +153,22 @@ function DashboardContent({
 }) {
   const { products, isLoading, error: loadError } = useProductsState();
   const { showToast } = useToast();
+  const [activeTab, setActiveTab] = useState<AdminTab>("orders");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [isTransitioningOrder, setIsTransitioningOrder] = useState(false);
+  const [tickets, setTickets] = useState<ServiceTicket[]>([]);
+  const [ticketsLoading, setTicketsLoading] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<StorePaymentSettings>(() => ({
+    qrisImageUrl:
+      defaultStoreSettings.qrisImageUrl ?? "/images/qris-konter-fajar-cell.svg",
+    danaNumber: defaultStoreSettings.danaNumber ?? "085156069234",
+    danaAccountName:
+      defaultStoreSettings.danaAccountName ?? defaultStoreSettings.name,
+    storeLat: defaultStoreSettings.coordinates?.lat ?? -7.3679,
+    storeLng: defaultStoreSettings.coordinates?.lng ?? 109.6836,
+  }));
+  const [settingsLoading, setSettingsLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] =
     useState<FilterValue<ProductCategory>>("all");
@@ -179,6 +212,206 @@ function DashboardContent({
         .includes(keyword);
     });
   }, [products, query, categoryFilter, statusFilter]);
+
+  const pendingOrdersCount = useMemo(
+    () =>
+      orders.filter(
+        (o) => o.status === "pending_approval" || o.status === "payment_review",
+      ).length,
+    [orders],
+  );
+
+  const activeTicketsCount = useMemo(
+    () =>
+      tickets.filter(
+        (t) => t.status !== "completed" && t.status !== "cancelled",
+      ).length,
+    [tickets],
+  );
+
+  const fetchOrders = useCallback(async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch("/api/admin/orders", { cache: "no-store" });
+      if (res.status === 401) {
+        onLogout();
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        orders?: Order[];
+      } | null;
+      if (res.ok && data?.success && Array.isArray(data.orders)) {
+        setOrders(data.orders);
+      }
+    } catch {
+      // Abaikan gangguan sesaat
+    } finally {
+      setOrdersLoading(false);
+    }
+  }, [onLogout]);
+
+  const fetchTickets = useCallback(async () => {
+    setTicketsLoading(true);
+    try {
+      const res = await fetch("/api/admin/service-tickets", {
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        onLogout();
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        tickets?: ServiceTicket[];
+      } | null;
+      if (res.ok && data?.success && Array.isArray(data.tickets)) {
+        setTickets(data.tickets);
+      }
+    } catch {
+      // Abaikan gangguan sesaat
+    } finally {
+      setTicketsLoading(false);
+    }
+  }, [onLogout]);
+
+  const fetchStoreSettings = useCallback(async () => {
+    setSettingsLoading(true);
+    try {
+      const res = await fetch("/api/admin/store-settings", {
+        cache: "no-store",
+      });
+      if (res.status === 401) {
+        onLogout();
+        return;
+      }
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        settings?: StorePaymentSettings;
+      } | null;
+      if (res.ok && data?.success && data.settings) {
+        setStoreSettings(data.settings);
+      }
+    } catch {
+      // Abaikan gangguan sesaat
+    } finally {
+      setSettingsLoading(false);
+    }
+  }, [onLogout]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      void fetchOrders();
+      void fetchTickets();
+      void fetchStoreSettings();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [fetchOrders, fetchTickets, fetchStoreSettings]);
+
+  async function handleOrderTransition(
+    orderId: string,
+    nextStatus: OrderStatus,
+    adminNote: string,
+  ): Promise<boolean> {
+    setIsTransitioningOrder(true);
+    try {
+      const res = await fetch(
+        `/api/admin/orders/${encodeURIComponent(orderId)}/transition`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nextStatus, adminNote }),
+        },
+      );
+
+      if (res.status === 401) {
+        onLogout();
+        return false;
+      }
+
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+      } | null;
+
+      if (!res.ok || !data?.success) {
+        showToast({
+          variant: "error",
+          title: "Gagal memperbarui status pesanan",
+          description: data?.error ?? "Periksa stok atau transisi status.",
+        });
+        return false;
+      }
+
+      showToast({
+        variant: "success",
+        title: "Status pesanan diperbarui",
+        description: `Status berubah menjadi "${ORDER_STATUS_LABELS[nextStatus]}".`,
+      });
+      await Promise.all([fetchOrders(), refreshProducts()]);
+      return true;
+    } catch {
+      showToast({
+        variant: "error",
+        title: "Koneksi bermasalah",
+        description: "Gagal menghubungi server.",
+      });
+      return false;
+    } finally {
+      setIsTransitioningOrder(false);
+    }
+  }
+
+  async function handleUpdateTicket(
+    id: string,
+    status: ServiceTicketStatus,
+    adminNotes: string,
+  ): Promise<boolean> {
+    try {
+      const res = await fetch(
+        `/api/admin/service-tickets/${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status, adminNotes }),
+        },
+      );
+
+      if (res.status === 401) {
+        onLogout();
+        return false;
+      }
+
+      const data = (await res.json().catch(() => null)) as {
+        success?: boolean;
+        error?: string;
+      } | null;
+
+      if (!res.ok || !data?.success) {
+        showToast({
+          variant: "error",
+          title: "Gagal menyimpan tiket servis",
+          description: data?.error ?? "Coba lagi.",
+        });
+        return false;
+      }
+
+      showToast({
+        variant: "success",
+        title: "Tiket servis diperbarui",
+        description: "Perubahan status dan catatan teknisi tersimpan.",
+      });
+      await fetchTickets();
+      return true;
+    } catch {
+      showToast({
+        variant: "error",
+        title: "Koneksi bermasalah",
+        description: "Gagal memperbarui tiket servis.",
+      });
+      return false;
+    }
+  }
 
   const isFiltered =
     query.trim() !== "" ||
@@ -373,17 +606,29 @@ function DashboardContent({
           <div>
             <p className="inline-flex items-center gap-1.5 rounded-full border border-royal-100 bg-royal-50 px-2.5 py-1 text-[11px] font-bold tracking-wide text-royal-700 uppercase">
               <Store className="size-3.5" aria-hidden="true" />
-              Manajemen Stok
+              Pusat Kendali OMS
             </p>
             <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
-              Kelola unit & status jual
+              {activeTab === "orders"
+                ? "Pesanan Masuk & Approval"
+                : activeTab === "products"
+                  ? "Kelola unit & status jual"
+                  : activeTab === "service"
+                    ? "Antrean Tiket Servis HP"
+                    : activeTab === "analytics"
+                      ? "Ringkasan & Analitik Toko"
+                      : "Pengaturan Pembayaran & Toko"}
             </h1>
             <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600">
-              Tambah, ubah, atau hapus produk. Klik badge status untuk
-              memindahkan unit antara{" "}
-              <strong className="font-semibold text-emerald-700">Ready</strong>{" "}
-              dan{" "}
-              <strong className="font-semibold text-rose-700">Sold Out</strong>.
+              {activeTab === "orders"
+                ? "Verifikasi bukti transfer QRIS/DANA, setujui pesanan COD/pickup, dan pantau pengurangan stok atomik."
+                : activeTab === "products"
+                  ? "Tambah, ubah, atau hapus produk. Klik badge status untuk memindahkan unit antara Ready dan Sold Out."
+                  : activeTab === "service"
+                    ? "Kelola status pengerjaan servis dari halaman /service dan hubungi pelanggan via WhatsApp."
+                    : activeTab === "analytics"
+                      ? "Pantau omzet bulan ini, produk terlaris, serta ekspor laporan transaksi CSV."
+                      : "Unggah foto QRIS asli, ubah nomor DANA tujuan, dan atur titik koordinat COD toko."}
             </p>
             {loginAt && (
               <p className="mt-1.5 text-xs text-slate-600">
@@ -392,25 +637,147 @@ function DashboardContent({
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setResetOpen(true)}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
-            >
-              <RotateCcw className="size-4" aria-hidden="true" />
-              Reset Data
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormState({ mode: "create" })}
-              className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-royal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
-            >
-              <Plus className="size-4" aria-hidden="true" />
-              Tambah Produk
-            </button>
-          </div>
+          {activeTab === "products" && (
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setResetOpen(true)}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-600 shadow-sm transition hover:border-amber-200 hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600"
+              >
+                <RotateCcw className="size-4" aria-hidden="true" />
+                Reset Data
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormState({ mode: "create" })}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-royal-700 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-royal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-600"
+              >
+                <Plus className="size-4" aria-hidden="true" />
+                Tambah Produk
+              </button>
+            </div>
+          )}
         </div>
+
+        {/* Tab Navigation */}
+        <nav
+          aria-label="Navigasi modul admin"
+          className="mt-6 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {(
+            [
+              {
+                id: "orders",
+                label: "Pesanan Masuk",
+                icon: ClipboardList,
+                badge: pendingOrdersCount,
+                badgeTone: "bg-amber-500 text-slate-950",
+              },
+              {
+                id: "products",
+                label: "Katalog Produk",
+                icon: Package,
+                badge: products.length,
+                badgeTone: "bg-slate-200 text-slate-800",
+              },
+              {
+                id: "service",
+                label: "Tiket Servis",
+                icon: Wrench,
+                badge: activeTicketsCount,
+                badgeTone: "bg-sky-100 text-sky-800",
+              },
+              {
+                id: "analytics",
+                label: "Ringkasan & Analitik",
+                icon: BarChart3,
+                badge: 0,
+                badgeTone: "",
+              },
+              {
+                id: "settings",
+                label: "Pengaturan QRIS & DANA",
+                icon: Settings,
+                badge: 0,
+                badgeTone: "",
+              },
+            ] as const
+          ).map((tab) => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 py-2 text-xs font-extrabold transition cursor-pointer sm:text-sm",
+                  active
+                    ? "bg-royal-700 text-white shadow-sm"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+                )}
+              >
+                <Icon className="size-4 shrink-0" aria-hidden="true" />
+                <span>{tab.label}</span>
+                {tab.badge > 0 && (
+                  <span
+                    className={cn(
+                      "inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black tabular-nums",
+                      active ? "bg-white text-royal-800" : tab.badgeTone,
+                    )}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {activeTab === "orders" && (
+          <div className="mt-6">
+            <AdminOrdersTab
+              orders={orders}
+              isLoading={ordersLoading}
+              isTransitioning={isTransitioningOrder}
+              onRefresh={fetchOrders}
+              onTransition={handleOrderTransition}
+            />
+          </div>
+        )}
+
+        {activeTab === "service" && (
+          <div className="mt-6">
+            <AdminServiceTicketsTab
+              tickets={tickets}
+              isLoading={ticketsLoading}
+              onRefresh={fetchTickets}
+              onUpdateTicket={handleUpdateTicket}
+            />
+          </div>
+        )}
+
+        {activeTab === "analytics" && (
+          <div className="mt-6">
+            <AdminAnalyticsTab orders={orders} />
+          </div>
+        )}
+
+        {activeTab === "settings" && (
+          <div className="mt-6">
+            <AdminSettingsTab
+              key={storeSettings.updatedAt ?? "default-settings"}
+              initialSettings={storeSettings}
+              isLoading={settingsLoading}
+              onRefresh={fetchStoreSettings}
+              onSaved={(updated) => setStoreSettings(updated)}
+              onUnauthorized={onLogout}
+            />
+          </div>
+        )}
+
+        {activeTab === "products" && (
+          <>
 
         {loadError && (
           <div
@@ -600,6 +967,8 @@ function DashboardContent({
           <ShoppingBag className="size-3.5" aria-hidden="true" />
           {stats.ready} produk siap dijual • {stats.sold} sold out
         </p>
+          </>
+        )}
       </main>
 
       {formState && (

@@ -6,8 +6,10 @@ import {
   MapPin,
   Menu,
   MessageCircle,
+  PackageSearch,
   Repeat2,
   ShieldCheck,
+  ShoppingCart,
   Smartphone,
   Sparkles,
   Type,
@@ -19,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { Container } from "@/components/ui/container";
 import { WhatsAppLink } from "@/components/ui/whatsapp-link";
 import { NAV_ITEMS } from "@/lib/constants";
@@ -32,6 +35,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "#hp-baru": Sparkles,
   "#aksesoris": Headphones,
   "/service": Wrench,
+  "/lacak": PackageSearch,
   "#tukar-tambah": Repeat2,
   "#lokasi": MapPin,
 };
@@ -42,10 +46,13 @@ export function Navbar() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>(
-    pathname === "/service" ? "/service" : NAV_ITEMS[0]?.href ?? "#beranda",
+    pathname === "/service" || pathname === "/lacak"
+      ? pathname
+      : (NAV_ITEMS[0]?.href ?? "#beranda"),
   );
   const [scrolled, setScrolled] = useState(false);
   const [isElderMode, setIsElderMode] = useState(false);
+  const { totalQuantity, openDrawer } = useCart();
 
   const store = defaultStoreSettings;
 
@@ -268,10 +275,9 @@ export function Navbar() {
               aria-label="Navigasi utama"
             >
               {NAV_ITEMS.map((item) => {
-                const isActive =
-                  item.href === "/service"
-                    ? pathname === "/service"
-                    : activeSection === item.href && pathname === "/";
+                const isActive = item.href.startsWith("/")
+                  ? pathname === item.href
+                  : activeSection === item.href && pathname === "/";
                 const Icon = NAV_ICONS[item.href] ?? Home;
 
                 return (
@@ -301,14 +307,42 @@ export function Navbar() {
             </nav>
 
             {/* Desktop Actions */}
-            <div className="hidden items-center gap-2.5 lg:flex shrink-0">
+            <div className="hidden items-center gap-2 lg:flex shrink-0">
+              <button
+                type="button"
+                onClick={openDrawer}
+                aria-label={`Buka keranjang belanja${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
+                className="relative inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3 text-sm font-bold text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
+              >
+                <ShoppingCart className="size-4" aria-hidden="true" />
+                <span>Keranjang</span>
+                {totalQuantity > 0 && (
+                  <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-royal-700 px-1.5 py-0.5 text-[11px] font-extrabold text-white tabular-nums">
+                    {totalQuantity}
+                  </span>
+                )}
+              </button>
               <WhatsAppLink href={buildGeneralInquiryUrl()} size="md">
                 Chat Admin
               </WhatsAppLink>
             </div>
 
-            {/* Mobile Controls: Chat WA Ringkas & Hamburger Menu */}
-            <div className="flex items-center gap-2 lg:hidden">
+            {/* Mobile Controls: Keranjang, Mode Jelas, Chat WA & Hamburger Menu */}
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:hidden">
+              <button
+                type="button"
+                onClick={openDrawer}
+                aria-label={`Buka keranjang belanja${totalQuantity > 0 ? ` (${totalQuantity} item)` : ""}`}
+                className="relative inline-flex size-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs transition hover:border-royal-300 hover:bg-royal-50 hover:text-royal-700 active:scale-95 cursor-pointer"
+              >
+                <ShoppingCart className="size-4" aria-hidden="true" />
+                {totalQuantity > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 inline-flex min-w-4.5 items-center justify-center rounded-full bg-royal-700 px-1 py-0.5 text-[10px] font-extrabold leading-none text-white tabular-nums shadow-sm">
+                    {totalQuantity}
+                  </span>
+                )}
+              </button>
+
               <button
                 type="button"
                 onClick={toggleElderMode}
@@ -365,10 +399,9 @@ export function Navbar() {
             <div className="bg-white/95 backdrop-blur-xl px-4 pt-3 pb-6">
               <nav className="flex flex-col gap-1" aria-label="Navigasi mobile">
                 {NAV_ITEMS.map((item) => {
-                  const isActive =
-                    item.href === "/service"
-                      ? pathname === "/service"
-                      : activeSection === item.href && pathname === "/";
+                  const isActive = item.href.startsWith("/")
+                    ? pathname === item.href
+                    : activeSection === item.href && pathname === "/";
                   const Icon = NAV_ICONS[item.href] ?? Home;
 
                   return (

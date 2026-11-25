@@ -1,9 +1,16 @@
 "use client";
 
-import { ImageIcon, ShieldCheck } from "lucide-react";
+import {
+  Clock,
+  ImageIcon,
+  LoaderCircle,
+  ShieldCheck,
+  ShoppingCart,
+} from "lucide-react";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { WhatsAppLink } from "@/components/ui/whatsapp-link";
 import { Modal } from "@/components/ui/modal";
@@ -12,6 +19,7 @@ import {
   ACCESSORY_TYPE_LABELS,
   PRODUCT_CATEGORY_LABELS,
 } from "@/lib/constants";
+import { getProductAvailabilityInfo } from "@/lib/order-constants";
 import { requiresNativeImage } from "@/lib/product-images";
 import {
   calculateDiscountPercent,
@@ -107,11 +115,16 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
   const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const { showToast } = useToast();
+  const { addToCart, getItemQuantity, openDrawer, pendingProductId } =
+    useCart();
   const isUsed = product.category === "handphone-bekas";
   const discount = calculateDiscountPercent(
     product.price,
     product.originalPrice,
   );
+  const cartQty = getItemQuantity(product.id);
+  const availability = getProductAvailabilityInfo(product, cartQty);
+  const isCartPending = pendingProductId === product.id;
   const specs = getSpecRows(product);
 
   const allImages = useMemo(() => {
@@ -131,6 +144,19 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
       title: "Mengarahkan ke WhatsApp...",
       description: `Pertanyaan untuk ${product.name} sedang disiapkan.`,
     });
+  }
+
+  async function handleAddToCart() {
+    if (cartQty > 0 && availability.remainingToAdd === 0) {
+      onClose();
+      openDrawer();
+      return;
+    }
+    if (!availability.canAddToCart || isCartPending) return;
+    const ok = await addToCart(product, 1);
+    if (ok) {
+      onClose();
+    }
   }
 
   return (
@@ -161,14 +187,50 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
               )}
             </div>
           </div>
-          <WhatsAppLink
-            href={buildProductInquiryUrl(product)}
-            size="md"
-            onClick={handleWhatsAppClick}
-            className="w-full shrink-0 sm:w-auto"
-          >
-            Tanya Unit Ini via WA
-          </WhatsAppLink>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            <button
+              type="button"
+              onClick={() => {
+                void handleAddToCart();
+              }}
+              disabled={
+                isCartPending ||
+                (!availability.canAddToCart && cartQty === 0)
+              }
+              className={cn(
+                "inline-flex min-h-11 w-full shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 sm:w-auto",
+                cartQty > 0
+                  ? "border border-royal-300 bg-royal-50 text-royal-800 hover:bg-royal-100"
+                  : "bg-brand-gradient text-white shadow-md shadow-royal-600/25 hover:opacity-95",
+              )}
+            >
+              {isCartPending ? (
+                <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <ShoppingCart className="size-4" aria-hidden="true" />
+              )}
+              <span>
+                {availability.isSoldOut
+                  ? "Stok Habis"
+                  : availability.isHeldByOthers
+                    ? "Sedang Dipesan Orang Lain"
+                    : cartQty > 0
+                      ? availability.remainingToAdd > 0
+                        ? `Tambah Lagi (${cartQty} di Keranjang)`
+                        : `Lihat Keranjang (${cartQty})`
+                      : "Tambah ke Keranjang"}
+              </span>
+            </button>
+
+            <WhatsAppLink
+              href={buildProductInquiryUrl(product)}
+              size="md"
+              onClick={handleWhatsAppClick}
+              className="w-full shrink-0 sm:w-auto"
+            >
+              Tanya Unit Ini via WA
+            </WhatsAppLink>
+          </div>
         </div>
       }
     >
@@ -292,14 +354,23 @@ export function ProductQuickView({ product, onClose }: ProductQuickViewProps) {
             <span
               className={cn(
                 "rounded-lg px-2.5 py-1 text-xs font-bold border",
-                product.stock > 0
+                availability.effectiveAvailable > 0
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
                   : "bg-rose-50 text-rose-700 border-rose-200/60",
               )}
             >
-              Stok {product.stock} unit
+              Stok siap order: {availability.effectiveAvailable} unit
             </span>
           </div>
+
+          {availability.isHeldByOthers && (
+            <div className="mt-3 flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900">
+              <Clock className="size-4 shrink-0 text-amber-600" aria-hidden="true" />
+              <span>
+                Sedang dipesan orang lain (cek lagi dalam beberapa menit).
+              </span>
+            </div>
+          )}
 
           <p className="mt-3.5 text-sm leading-relaxed text-slate-600">
             {product.description}

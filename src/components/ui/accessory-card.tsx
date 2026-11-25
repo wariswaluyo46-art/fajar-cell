@@ -3,10 +3,13 @@
 import {
   BatteryCharging,
   BatteryFull,
+  Clock,
   Headphones,
   ImageIcon,
+  LoaderCircle,
   Package,
   Shield,
+  ShoppingCart,
   Smartphone,
   Speaker,
   type LucideIcon,
@@ -14,11 +17,13 @@ import {
 import Image from "next/image";
 import { useState } from "react";
 
+import { useCart } from "@/components/cart/cart-provider";
 import { useQuickView } from "@/components/catalog/quick-view-provider";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { WhatsAppLink } from "@/components/ui/whatsapp-link";
 import { useToast } from "@/components/ui/toast-provider";
 import { ACCESSORY_TYPE_LABELS } from "@/lib/constants";
+import { getProductAvailabilityInfo } from "@/lib/order-constants";
 import { requiresNativeImage } from "@/lib/product-images";
 import { cn, formatRupiah } from "@/lib/utils";
 import { buildProductInquiryUrl } from "@/lib/whatsapp";
@@ -43,9 +48,13 @@ interface AccessoryCardProps {
 export function AccessoryCard({ product, className }: AccessoryCardProps) {
   const { openQuickView } = useQuickView();
   const { showToast } = useToast();
+  const { addToCart, getItemQuantity, openDrawer, pendingProductId } =
+    useCart();
   const [failedThumbnail, setFailedThumbnail] = useState<string | null>(null);
   const Icon = ACCESSORY_ICONS[product.accessoryType];
-  const isSoldOut = product.status === "sold-out";
+  const cartQty = getItemQuantity(product.id);
+  const availability = getProductAvailabilityInfo(product, cartQty);
+  const isCartPending = pendingProductId === product.id;
   const imageError = failedThumbnail === product.thumbnail;
   const usesNativeImage = requiresNativeImage(product.thumbnail);
 
@@ -55,6 +64,16 @@ export function AccessoryCard({ product, className }: AccessoryCardProps) {
       title: "Mengarahkan ke WhatsApp...",
       description: `Pertanyaan untuk ${product.name} sedang disiapkan.`,
     });
+  }
+
+  function handleAddToCart(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (cartQty > 0 && availability.remainingToAdd === 0) {
+      openDrawer();
+      return;
+    }
+    if (!availability.canAddToCart || isCartPending) return;
+    void addToCart(product, 1);
   }
 
   return (
@@ -108,11 +127,20 @@ export function AccessoryCard({ product, className }: AccessoryCardProps) {
         <h3 className="mt-1 line-clamp-2 text-sm leading-snug font-bold text-slate-900 transition-colors duration-200 group-hover:text-royal-700 sm:text-base">
           {product.name}
         </h3>
-        <p className="mt-1 text-xs text-slate-500">
-          {isSoldOut ? "Stok habis" : `Stok tersedia: ${product.stock}`}
-        </p>
+        {availability.isHeldByOthers ? (
+          <p className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-bold leading-snug text-amber-900">
+            <Clock className="size-3 shrink-0 text-amber-600" aria-hidden="true" />
+            <span>Sedang dipesan orang lain (cek lagi dalam beberapa menit)</span>
+          </p>
+        ) : (
+          <p className="mt-1 text-xs text-slate-500">
+            {availability.isSoldOut
+              ? "Stok habis"
+              : `Stok tersedia: ${availability.effectiveAvailable}`}
+          </p>
+        )}
 
-        <div className="mt-auto flex items-end justify-between gap-2 pt-4">
+        <div className="mt-auto pt-4">
           <div>
             <p className="text-lg font-extrabold tracking-tight text-royal-700">
               {formatRupiah(product.price)}
@@ -123,15 +151,46 @@ export function AccessoryCard({ product, className }: AccessoryCardProps) {
               </p>
             )}
           </div>
-          <WhatsAppLink
-            href={buildProductInquiryUrl(product)}
-            size="sm"
-            onClick={handleWhatsAppClick}
-            className="relative z-20"
-            aria-label={`Tanya ${product.name} via WhatsApp`}
-          >
-            Tanya
-          </WhatsAppLink>
+          <div className="relative z-20 mt-3 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              disabled={
+                isCartPending ||
+                (!availability.canAddToCart && cartQty === 0)
+              }
+              className={cn(
+                "inline-flex min-h-9 items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-extrabold transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55",
+                cartQty > 0
+                  ? "border border-royal-300 bg-royal-50 text-royal-800 hover:bg-royal-100"
+                  : "bg-brand-gradient text-white shadow-sm hover:opacity-95 active:scale-95",
+              )}
+            >
+              {isCartPending ? (
+                <LoaderCircle className="size-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <ShoppingCart className="size-3.5 shrink-0" aria-hidden="true" />
+              )}
+              <span>
+                {availability.isSoldOut
+                  ? "Habis"
+                  : availability.isHeldByOthers
+                    ? "Dipesan"
+                    : cartQty > 0
+                      ? `(${cartQty})`
+                      : "Keranjang"}
+              </span>
+            </button>
+            <WhatsAppLink
+              href={buildProductInquiryUrl(product)}
+              size="sm"
+              onClick={handleWhatsAppClick}
+              className="w-full"
+              aria-label={`Tanya ${product.name} via WhatsApp`}
+            >
+              Tanya
+            </WhatsAppLink>
+          </div>
         </div>
       </div>
 

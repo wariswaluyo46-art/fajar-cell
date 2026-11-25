@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { CartProvider } from "@/components/cart/cart-provider";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { defaultStoreSettings } from "@/lib/store";
 
@@ -146,7 +147,9 @@ export default function RootLayout({
             __html: JSON.stringify(localBusinessJsonLd).replace(/</g, "\\u003c"),
           }}
         />
-        <ToastProvider>{children}</ToastProvider>
+        <ToastProvider>
+          <CartProvider>{children}</CartProvider>
+        </ToastProvider>
       </body>
     </html>
   );

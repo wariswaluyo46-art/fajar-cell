@@ -1,4 +1,5 @@
 import { LazyAiAssistant } from "@/components/ai/lazy-ai-assistant";
+import { CompareProvider } from "@/components/catalog/compare-provider";
 import { ProductsProvider } from "@/components/catalog/products-provider";
 import { QuickViewProvider } from "@/components/catalog/quick-view-provider";
 import { Footer } from "@/components/layout/footer";
@@ -20,9 +21,11 @@ export default function HomePage() {
       <main id="main-content" tabIndex={-1} className="overflow-x-hidden focus:outline-none">
         <ProductsProvider initialProducts={initialProducts}>
           <QuickViewProvider>
-            <Hero />
-            <HeroMarqueeSection />
-            <HomeCatalogs />
+            <CompareProvider>
+              <Hero />
+              <HeroMarqueeSection />
+              <HomeCatalogs />
+            </CompareProvider>
           </QuickViewProvider>
         </ProductsProvider>
         <ServicePreviewBanner />
